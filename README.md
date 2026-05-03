@@ -1,4 +1,7 @@
 # revanced-script
+> [!IMPORTANT]
+> Unmaintained, I dont really use the jadx UI anymore. Use https://github.com/hoo-dles/jadx-morphe
+> or https://github.com/hoo-dles/jadx-revanced (unmaintained as well). If a better fork appears I'll change this.
 
 Run ./gradlew app:dist to build the plugin then in app/build/dist you find the jar
 
