@@ -1,4 +1,4 @@
-package com.valonso.utils
+package app.revanced.utils
 
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.iface.Method

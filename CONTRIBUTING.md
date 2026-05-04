@@ -58,46 +58,43 @@
    Continuing the legacy of Vanced
 </p>
 
-# 🩹 ReVanced Patch Helper
+# 👋 Contribution guidelines
 
-![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/ReVanced/revanced-patch-helper/release.yml)
-![GPLv3 License](https://img.shields.io/badge/License-GPL%20v3-yellow.svg)
+This document describes how to contribute to ReVanced Patch Helper.
 
-This repository contains a plugin for [JADX](https://github.com/skylot/jadx) to assist with patch test and creation.
+## 📖 Resources to help you get started
 
-## ❓ About
+* The [documentation](https://github.com/ReVanced/revanced-patch-helper/tree/main/docs) contains the fundamentals
+  of ReVanced Patch Helper and how to use the created patches in [ReVanced Patcher](https://github.com/ReVanced/revanced-patcher)
+* [Our backlog](https://github.com/orgs/ReVanced/projects/12) is where we keep track of what we're working on
+* [Issues](https://github.com/ReVanced/revanced-patch-helper/issues) are where we keep track of bugs and feature requests
 
-A plugin for [JADX](https://github.com/skylot/jadx) that helps you write ReVanced Patches faster.
-It generates fingerprints and patch snippets directly from the decompiled code,
-so you can target methods, fields, and classes without manually inspecting the smali code.
+## 🙏 Submitting a feature request
 
-## 💪 Features
+Features can be requested by opening an issue using the
+[Feature request issue template](https://github.com/ReVanced/revanced-patch-helper/issues/new?assignees=&labels=Feature+request&projects=&template=feature_request.yml&title=feat%3A+).
 
-Some of the features the helper provide are:
+> **Note**
+> Requests can be accepted or rejected at the discretion of maintainers of ReVanced Patch Helper.
+> Good motivation has to be provided for a request to be accepted.
 
-* 🧪 **Build fingerprints**: Declaratively target methods with custom filters
-* 🧩 **Patch templates**: Instantly generate a fingerprint for any field
-* 🎯 **Return override snippets**: Generate a boilerplate for all DEX primitive types
-* 🔍️ **Class lookup**: Build declarative class predicates without memorizing the API
-* ✨ **And much more!**
+## 🐞 Submitting a bug report
 
-## 🚀 How to get started
+If you encounter a bug while using ReVanced Patch Helper, open an issue using the
+[Bug report issue template](https://github.com/ReVanced/revanced-patch-helper/issues/new?assignees=&labels=Bug+report&projects=&template=bug_report.yml&title=bug%3A+).
 
-You can use [ReVanced Patches](https://github.com/ReVanced/revanced-patches) or [ReVanced Patches Template](https://github.com/ReVanced/revanced-patches-template) to use ReVanced Patch Helper.
+## 📝 How to contribute
 
-## 📚 Everything else
+1. Before contributing, it is recommended to open an issue to discuss your change
+   with the maintainers of ReVanced Patch Helper. This will help you determine whether your change is acceptable
+   and whether it is worth your time to implement it
+2. Development happens on the `dev` branch. Fork the repository and create your branch from `dev`
+3. Commit your changes. In case you are contributing a new feature, make sure to follow the conventions
+   described in the [ReVanced Patch Helper documentation](https://github.com/ReVanced/revanced-patch-helper/tree/main/docs)
+4. Submit a pull request to the `dev` branch of the repository and reference issues
+   that your pull request closes in the description of your pull request
+5. Our team will review your pull request and provide feedback. Once your pull request is approved,
+   it will be merged into the `dev` branch and will be included in the next release of ReVanced Patch Helper
 
-### 📙 Contributing
-
-Thank you for considering contributing to ReVanced Patch Helper. You can find the contribution guidelines [here](CONTRIBUTING.md).
-
-### 🛠️ Building
-
-To build ReVanced Patch Helper, you can follow the [ReVanced documentation](https://github.com/ReVanced/revanced-documentation).
-
-## 📜 License
-
-ReVanced Patch Helper is licensed under the GPLv3 license. Please see the [license file](LICENSE) for more information.
-[tl;dr](https://www.tldrlegal.com/license/gnu-general-public-license-v3-gpl-3) you may copy, distribute and modify ReVanced Patch Helper as long as you track changes/dates in source files.
-Any modifications to ReVanced Patch Helper must also be made available under the GPL,
-along with build & install instructions.
+❤️ Thank you for considering contributing to ReVanced Patch Helper,
+ReVanced
