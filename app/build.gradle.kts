@@ -13,10 +13,10 @@ val generatePluginMeta by tasks.registering {
         outDir.get().file("META-INF/plugin.properties").asFile.apply {
             parentFile.mkdirs()
             writeText("""
-                plugin.id=revanced-patch-helper
-                plugin.name=ReVanced Patch Helper
+                plugin.id=revanced-jadx-plugin
+                plugin.name=ReVanced JADX Plugin
                 plugin.description=Plugin to assist with patch tests and creation for ReVanced
-                plugin.homepage=https://github.com/ReVanced/revanced-patch-helper
+                plugin.homepage=https://github.com/ReVanced/revanced-jadx-plugin
                 plugin.version=${project.version}
             """.trimIndent())
         }
@@ -73,13 +73,13 @@ tasks {
         }
     }
     shadowJar {
-        archiveBaseName.set("revanced-patch-helper")
+        archiveBaseName.set("revanced-jadx-plugin")
         archiveVersion.set(project.version.toString())
         archiveClassifier.set("") // remove '-all' suffix
         manifest {
             attributes(
-                "Plugin-Id" to "revanced-patch-helper",
-                "Plugin-Name" to "ReVanced Patch Helper",
+                "Plugin-Id" to "revanced-jadx-plugin",
+                "Plugin-Name" to "ReVanced JADX Plugin",
                 "Plugin-Version" to project.version.toString(),
             )
         }

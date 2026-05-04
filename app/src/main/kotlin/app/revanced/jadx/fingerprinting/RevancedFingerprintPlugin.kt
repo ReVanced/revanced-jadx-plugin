@@ -15,7 +15,7 @@ import java.util.Properties
 
 class ReVancedFingerprintPlugin : JadxPlugin {
     companion object {
-        const val ID = "revanced-patch-helper"
+        const val ID = "revanced-jadx-plugin"
         private val log = KotlinLogging.logger("$ID/plugin")
     }
 
@@ -40,9 +40,9 @@ class ReVancedFingerprintPlugin : JadxPlugin {
     private val pluginOptions = PluginOptions()
     override fun getPluginInfo(): JadxPluginInfo = JadxPluginInfoBuilder
         .pluginId(meta("plugin.id", ID))
-        .name(meta("plugin.name", "ReVanced Patch Helper"))
+        .name(meta("plugin.name", "ReVanced JADX Plugin"))
         .description(meta("plugin.description", "Plugin to assist with patch tests and creation for ReVanced"))
-        .homepage(meta("plugin.homepage", "https://github.com/ReVanced/revanced-patch-helper"))
+        .homepage(meta("plugin.homepage", "https://github.com/ReVanced/revanced-jadx-plugin"))
         .build()
 
     override fun init(init: JadxPluginContext) {

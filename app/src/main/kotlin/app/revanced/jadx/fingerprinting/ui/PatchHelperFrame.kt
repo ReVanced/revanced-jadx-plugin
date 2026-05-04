@@ -12,7 +12,7 @@ class PatchHelperFrame(
 ) : JFrame(FRAME_TITLE) {
 
     companion object {
-        const val FRAME_TITLE = "Patch Helper"
+        const val FRAME_TITLE = "ReVanced Patch Helper"
     }
 
     init {

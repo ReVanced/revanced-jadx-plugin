@@ -33,7 +33,7 @@ object ReVancedFingerprintPluginUi {
     internal lateinit var resolver: ReVancedResolver
     private val iconCache = ConcurrentHashMap<String, FlatSVGIcon>()
     private var popupAwtListener: AWTEventListener? = null
-    private const val MENU_PREFIX = "Patch Helper: "
+    private const val MENU_PREFIX = "ReVanced: "
     const val FRAME_NAME = "Evaluate Fingerprint"
     var fingerprintEvalFrame: JFrame? = null
     internal const val MINIMAL_SETS_FRAME_NAME = "Fingerprinting Results"

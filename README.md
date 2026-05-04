@@ -58,9 +58,9 @@
    Continuing the legacy of Vanced
 </p>
 
-# 🩹 ReVanced Patch Helper
+# 🩹 ReVanced JADX Plugin
 
-![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/ReVanced/revanced-patch-helper/release.yml)
+![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/ReVanced/revanced-jadx-plugin/release.yml)
 ![GPLv3 License](https://img.shields.io/badge/License-GPL%20v3-yellow.svg)
 
 This repository contains a plugin for [JADX](https://github.com/skylot/jadx) to assist with patch test and creation.
@@ -83,21 +83,21 @@ Some of the features the helper provide are:
 
 ## 🚀 How to get started
 
-You can use [ReVanced Patches](https://github.com/ReVanced/revanced-patches) or [ReVanced Patches Template](https://github.com/ReVanced/revanced-patches-template) to use ReVanced Patch Helper.
+You can use [ReVanced Patches](https://github.com/ReVanced/revanced-patches) or [ReVanced Patches Template](https://github.com/ReVanced/revanced-patches-template) to use ReVanced JADX Plugin.
 
 ## 📚 Everything else
 
 ### 📙 Contributing
 
-Thank you for considering contributing to ReVanced Patch Helper. You can find the contribution guidelines [here](CONTRIBUTING.md).
+Thank you for considering contributing to ReVanced JADX Plugin. You can find the contribution guidelines [here](CONTRIBUTING.md).
 
 ### 🛠️ Building
 
-To build ReVanced Patch Helper, you can follow the [ReVanced documentation](https://github.com/ReVanced/revanced-documentation).
+To build ReVanced JADX Plugin, you can follow the [ReVanced documentation](https://github.com/ReVanced/revanced-documentation).
 
 ## 📜 License
 
-ReVanced Patch Helper is licensed under the GPLv3 license. Please see the [license file](LICENSE) for more information.
-[tl;dr](https://www.tldrlegal.com/license/gnu-general-public-license-v3-gpl-3) you may copy, distribute and modify ReVanced Patch Helper as long as you track changes/dates in source files.
-Any modifications to ReVanced Patch Helper must also be made available under the GPL,
+ReVanced JADX Plugin is licensed under the GPLv3 license. Please see the [license file](LICENSE) for more information.
+[tl;dr](https://www.tldrlegal.com/license/gnu-general-public-license-v3-gpl-3) you may copy, distribute and modify ReVanced JADX Plugin as long as you track changes/dates in source files.
+Any modifications to ReVanced JADX Plugin must also be made available under the GPL,
 along with build & install instructions.

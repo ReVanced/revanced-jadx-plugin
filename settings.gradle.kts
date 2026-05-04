@@ -1,4 +1,4 @@
-rootProject.name = "revanced-patch-helper"
+rootProject.name = "revanced-jadx-plugin"
 
 dependencyResolutionManagement {
     // Use Maven Central as the default repository (where Gradle will download dependencies) in all subprojects.
