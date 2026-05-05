@@ -1,14 +1,13 @@
 package app.revanced.jadx.fingerprinting.solver
 
+import app.revanced.jadx.fingerprinting.core.getShortId
 import app.revanced.patcher.extensions.InstructionExtensions.instructionsOrNull
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 
-fun Method.getUniqueId(): String {
-    return "${this.definingClass}${this.name}(${this.parameterTypes.joinToString(separator = "") { it.toString() }})${this.returnType}"
-}
+fun Method.getUniqueId(): String = "${this.definingClass}${this.getShortId()}"
 
 data class MethodFingerprint(
     val id: String,
