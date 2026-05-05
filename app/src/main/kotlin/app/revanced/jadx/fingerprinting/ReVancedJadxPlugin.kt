@@ -9,8 +9,6 @@ import jadx.api.plugins.JadxPlugin
 import jadx.api.plugins.JadxPluginContext
 import jadx.api.plugins.JadxPluginInfo
 import jadx.api.plugins.JadxPluginInfoBuilder
-import lanchon.multidexlib2.BasicDexFileNamer
-import lanchon.multidexlib2.MultiDexIO
 import java.util.Properties
 
 class ReVancedJadxPlugin : JadxPlugin {
@@ -60,14 +58,10 @@ class ReVancedJadxPlugin : JadxPlugin {
             log.error { "No APK file found" }
             return
         }
-        revancedResolver.createPatcher(sourceApk, this.context.files().pluginTempDir.toFile())
-
-        MultiDexIO.readDexFile(true, sourceApk, BasicDexFileNamer(), null, null)
-            .classes
-            .flatMap { it.methods }
-            .let(Solver::setMethods)
-
         Solver.setSettings(pluginOptions.toSolverSettings())
+        revancedResolver.createPatcher(sourceApk, this.context.files().pluginTempDir.toFile()) { methods ->
+            Solver.setMethods(methods)
+        }
         log.info { "ReVanced JADX plugin is enabled" }
         this.context.guiContext?.let { ReVancedJadxPluginUi.init(this.context, revancedResolver) }
     }
