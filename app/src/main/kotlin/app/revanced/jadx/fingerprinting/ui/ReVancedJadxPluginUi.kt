@@ -51,7 +51,7 @@ object ReVancedJadxPluginUi {
                 registerPopupActions()
             } catch (e: Exception) {
                 log.error(e) { "Failed to initialize UI" }
-                showError("Failed to initialize ReVanced Fingerprint Plugin UI: ${e.message}")
+                showError("Failed to initialize ReVanced JADX Plugin UI: ${e.message}")
             }
         }
     }
