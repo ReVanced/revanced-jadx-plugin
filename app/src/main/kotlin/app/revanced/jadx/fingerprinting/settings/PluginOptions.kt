@@ -1,6 +1,6 @@
 package app.revanced.jadx.fingerprinting.settings
 
-import app.revanced.jadx.fingerprinting.ReVancedFingerprintPlugin
+import app.revanced.jadx.fingerprinting.ReVancedJadxPlugin
 import app.revanced.jadx.fingerprinting.solver.SolverSettings
 import jadx.api.plugins.options.OptionFlag
 import jadx.api.plugins.options.impl.BasePluginOptionsBuilder
@@ -16,7 +16,7 @@ class PluginOptions : BasePluginOptionsBuilder() {
         private set
 
     override fun registerOptions() {
-        val id = ReVancedFingerprintPlugin.ID
+        val id = ReVancedJadxPlugin.ID
 
         boolOption("$id.enabled")
             .description("Enable ReVanced Fingerprint Plugin")

@@ -1,10 +1,10 @@
 package app.revanced.jadx.fingerprinting.ui.fingerprints
 
 import com.android.tools.smali.dexlib2.analysis.reflection.util.ReflectionUtils
-import app.revanced.jadx.fingerprinting.ReVancedFingerprintPlugin
+import app.revanced.jadx.fingerprinting.ReVancedJadxPlugin
 import app.revanced.jadx.fingerprinting.solver.Solver
 import app.revanced.jadx.fingerprinting.ui.Icons
-import app.revanced.jadx.fingerprinting.ui.ReVancedFingerprintPluginUi
+import app.revanced.jadx.fingerprinting.ui.ReVancedJadxPluginUi
 import app.revanced.jadx.fingerprinting.ui.readOnlyCodePanel
 import app.revanced.jadx.fingerprinting.ui.saveToFile
 import app.revanced.jadx.fingerprinting.ui.setFixedSize
@@ -26,9 +26,9 @@ import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
 import javax.swing.*
 
-private val log = KotlinLogging.logger("${ReVancedFingerprintPlugin.ID}/fingerprints/method")
+private val log = KotlinLogging.logger("${ReVancedJadxPlugin.ID}/fingerprints/method")
 
-internal fun ReVancedFingerprintPluginUi.copyMethodFingerprint(methodNode: MethodNode) {
+internal fun ReVancedJadxPluginUi.copyMethodFingerprint(methodNode: MethodNode) {
     try {
         val uniqueMethodId = "${ReflectionUtils.javaToDexName(methodNode.parentClass.rawName)}${methodNode.methodInfo.shortId}"
         log.info { "Generating fingerprints for: $uniqueMethodId" }
@@ -39,7 +39,7 @@ internal fun ReVancedFingerprintPluginUi.copyMethodFingerprint(methodNode: Metho
     }
 }
 
-internal fun ReVancedFingerprintPluginUi.copyMethodAsDeclarative(methodNode: MethodNode) {
+internal fun ReVancedJadxPluginUi.copyMethodAsDeclarative(methodNode: MethodNode) {
     try {
         val defClass = ReflectionUtils.javaToDexName(methodNode.parentClass.rawName)
         val shortId = methodNode.methodInfo.shortId
@@ -111,7 +111,7 @@ private fun parseDexDescriptorParams(descriptor: String): List<String> {
     return params
 }
 
-internal fun ReVancedFingerprintPluginUi.copyMethodAsImmutable(methodNode: MethodNode) {
+internal fun ReVancedJadxPluginUi.copyMethodAsImmutable(methodNode: MethodNode) {
     try {
         val defClass = ReflectionUtils.javaToDexName(methodNode.parentClass.rawName)
         val shortId = methodNode.methodInfo.shortId
@@ -137,7 +137,7 @@ internal fun ReVancedFingerprintPluginUi.copyMethodAsImmutable(methodNode: Metho
     }
 }
 
-internal fun ReVancedFingerprintPluginUi.copyNodeClassAsImmutable(ref: ICodeNodeRef) {
+internal fun ReVancedJadxPluginUi.copyNodeClassAsImmutable(ref: ICodeNodeRef) {
     try {
         val (defClass, memberDesc) = when (ref) {
             is MethodNode -> ReflectionUtils.javaToDexName(ref.parentClass.rawName) to ref.methodInfo.shortId
@@ -156,7 +156,7 @@ internal fun ReVancedFingerprintPluginUi.copyNodeClassAsImmutable(ref: ICodeNode
     }
 }
 
-fun ReVancedFingerprintPluginUi.showMinimalSetsWindow(minimalSets: List<List<String>>, methodNode: MethodNode) {
+fun ReVancedJadxPluginUi.showMinimalSetsWindow(minimalSets: List<List<String>>, methodNode: MethodNode) {
     val methodShortId = methodNode.methodInfo.shortId
     val uniqueMethodId = "${ReflectionUtils.javaToDexName(methodNode.parentClass.rawName)}${methodShortId}"
 

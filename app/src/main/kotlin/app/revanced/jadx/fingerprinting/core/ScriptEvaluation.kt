@@ -1,6 +1,6 @@
 package app.revanced.jadx.fingerprinting.core
 
-import app.revanced.jadx.fingerprinting.ReVancedFingerprintPlugin
+import app.revanced.jadx.fingerprinting.ReVancedJadxPlugin
 import app.revanced.jadx.fingerprinting.runtime.FingerprintScript
 import app.revanced.jadx.fingerprinting.runtime.FingerprintScriptCompilationConfiguration
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -121,7 +121,7 @@ fun gettingFirstMethodOrNull(vararg matchStrings: String, block: _MethodSpec.() 
 """
 
 object ScriptEvaluation {
-    private val log = KotlinLogging.logger("${ReVancedFingerprintPlugin.ID}/script-eval")
+    private val log = KotlinLogging.logger("${ReVancedJadxPlugin.ID}/script-eval")
     private val fingerprintScriptEvaluationConfiguration = ScriptEvaluationConfiguration {
         jvm {
             baseClassLoader(FingerprintScript::class.java.classLoader)

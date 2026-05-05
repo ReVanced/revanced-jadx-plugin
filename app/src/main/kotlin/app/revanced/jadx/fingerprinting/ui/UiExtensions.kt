@@ -1,6 +1,6 @@
 package app.revanced.jadx.fingerprinting.ui
 
-import app.revanced.jadx.fingerprinting.ReVancedFingerprintPlugin
+import app.revanced.jadx.fingerprinting.ReVancedJadxPlugin
 import app.revanced.jadx.fingerprinting.ui.components.CodePanel
 import app.revanced.jadx.fingerprinting.ui.theme.applyEditorTheme
 import io.github.oshai.kotlinlogging.KLogger
@@ -23,7 +23,7 @@ import javax.swing.JPanel
 import javax.swing.SwingUtilities
 import javax.swing.filechooser.FileNameExtensionFilter
 
-private val CODE_DIALOG_LOG = KotlinLogging.logger("${ReVancedFingerprintPlugin.ID}/code-dialog")
+private val CODE_DIALOG_LOG = KotlinLogging.logger("${ReVancedJadxPlugin.ID}/code-dialog")
 
 internal fun JComponent.setFixedSize(sz: Int) {
     val d = Dimension(sz, sz)
@@ -40,7 +40,7 @@ internal fun readOnlyCodePanel(text: String, guiContext: JadxGuiContext, log: KL
         applyEditorTheme(it, guiContext, log)
     }
 
-internal fun ReVancedFingerprintPluginUi.showError(
+internal fun ReVancedJadxPluginUi.showError(
     msg: String,
     title: String = "Error",
     parent: Component? = null,
@@ -50,7 +50,7 @@ internal fun ReVancedFingerprintPluginUi.showError(
     )
 }
 
-internal fun ReVancedFingerprintPluginUi.showCodeDialog(
+internal fun ReVancedJadxPluginUi.showCodeDialog(
     title: String,
     code: String,
     subtitle: String = "",

@@ -1,7 +1,7 @@
 package app.revanced.jadx.fingerprinting.ui
 
 import com.formdev.flatlaf.extras.FlatSVGIcon
-import app.revanced.jadx.fingerprinting.ReVancedFingerprintPlugin
+import app.revanced.jadx.fingerprinting.ReVancedJadxPlugin
 import app.revanced.jadx.fingerprinting.core.ReVancedResolver
 import app.revanced.jadx.fingerprinting.ui.fingerprints.copyFieldAsNullifier
 import app.revanced.jadx.fingerprinting.ui.fingerprints.copyFieldAsStaticNullifier
@@ -26,8 +26,8 @@ import java.nio.charset.StandardCharsets
 import java.util.concurrent.ConcurrentHashMap
 import javax.swing.*
 
-object ReVancedFingerprintPluginUi {
-    private val log = KotlinLogging.logger("${ReVancedFingerprintPlugin.ID}/ui")
+object ReVancedJadxPluginUi {
+    private val log = KotlinLogging.logger("${ReVancedJadxPlugin.ID}/ui")
     private lateinit var context: JadxPluginContext
     internal lateinit var guiContext: JadxGuiContext
     internal lateinit var resolver: ReVancedResolver
@@ -44,7 +44,7 @@ object ReVancedFingerprintPluginUi {
         this.resolver = resolver
         SwingUtilities.invokeLater {
             try {
-                listOf(FRAME_NAME, MINIMAL_SETS_FRAME_NAME, PatchHelperFrame.FRAME_TITLE)
+                listOf(FRAME_NAME, MINIMAL_SETS_FRAME_NAME, PluginFrame.FRAME_TITLE)
                     .flatMap { title -> JFrame.getFrames().filter { it.title == title } }
                     .forEach { it.dispose() }
                 addToolbarButton()
@@ -159,7 +159,7 @@ object ReVancedFingerprintPluginUi {
             }
 
             val toolbar = northPanel
-            val scriptButtonName = "${ReVancedFingerprintPlugin.ID}.button"
+            val scriptButtonName = "${ReVancedJadxPlugin.ID}.button"
             toolbar.components.find { it.name == scriptButtonName }?.let {
                 log.info { "Removing existing button from toolbar." }
                 toolbar.remove(it)
@@ -209,7 +209,7 @@ object ReVancedFingerprintPluginUi {
 
     fun showScriptPanel() {
         SwingUtilities.invokeLater {
-            val frame = PatchHelperFrame(context, guiContext)
+            val frame = PluginFrame(context, guiContext)
             fingerprintEvalFrame = frame
             frame.addWindowListener(object : WindowAdapter() {
                 override fun windowClosed(e: WindowEvent) {

@@ -3,8 +3,8 @@ package app.revanced.jadx.fingerprinting.ui.fingerprints
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.analysis.reflection.util.ReflectionUtils
-import app.revanced.jadx.fingerprinting.ReVancedFingerprintPlugin
-import app.revanced.jadx.fingerprinting.ui.ReVancedFingerprintPluginUi
+import app.revanced.jadx.fingerprinting.ReVancedJadxPlugin
+import app.revanced.jadx.fingerprinting.ui.ReVancedJadxPluginUi
 import app.revanced.jadx.fingerprinting.ui.showCodeDialog
 import app.revanced.jadx.fingerprinting.ui.showError
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -12,9 +12,9 @@ import jadx.api.plugins.input.data.annotations.EncodedValue
 import jadx.api.plugins.input.data.attributes.JadxAttrType
 import jadx.core.dex.nodes.FieldNode
 
-private val log = KotlinLogging.logger("${ReVancedFingerprintPlugin.ID}/fingerprints/field")
+private val log = KotlinLogging.logger("${ReVancedJadxPlugin.ID}/fingerprints/field")
 
-internal fun ReVancedFingerprintPluginUi.copyFieldFingerprint(fieldNode: FieldNode) {
+internal fun ReVancedJadxPluginUi.copyFieldFingerprint(fieldNode: FieldNode) {
     try {
         val shortId = fieldNode.fieldInfo.shortId
         val fieldName = fieldNode.fieldInfo.name
@@ -100,7 +100,7 @@ private fun buildSputCode(
     append("}")
 }
 
-internal fun ReVancedFingerprintPluginUi.copyFieldAsNullifier(fieldNode: FieldNode) {
+internal fun ReVancedJadxPluginUi.copyFieldAsNullifier(fieldNode: FieldNode) {
     try {
         val defClass = ReflectionUtils.javaToDexName(fieldNode.parentClass.rawName)
         val fieldName = fieldNode.fieldInfo.name
@@ -124,7 +124,7 @@ internal fun ReVancedFingerprintPluginUi.copyFieldAsNullifier(fieldNode: FieldNo
     }
 }
 
-internal fun ReVancedFingerprintPluginUi.copyFieldAsStaticNullifier(fieldNode: FieldNode) {
+internal fun ReVancedJadxPluginUi.copyFieldAsStaticNullifier(fieldNode: FieldNode) {
     try {
         val defClass = ReflectionUtils.javaToDexName(fieldNode.parentClass.rawName)
         val fieldName = fieldNode.fieldInfo.name

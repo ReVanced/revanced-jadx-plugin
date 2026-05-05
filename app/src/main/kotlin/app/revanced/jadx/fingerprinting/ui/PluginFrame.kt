@@ -6,13 +6,13 @@ import java.awt.Toolkit
 import javax.swing.JFrame
 import javax.swing.JTabbedPane
 
-class PatchHelperFrame(
+class PluginFrame(
     context: JadxPluginContext,
     guiContext: JadxGuiContext,
 ) : JFrame(FRAME_TITLE) {
 
     companion object {
-        const val FRAME_TITLE = "ReVanced Patch Helper"
+        const val FRAME_TITLE = "ReVanced JADX Plugin"
     }
 
     init {

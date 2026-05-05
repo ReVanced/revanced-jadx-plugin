@@ -3,7 +3,7 @@ package app.revanced.jadx.fingerprinting.ui
 import app.revanced.patcher.Fingerprint
 import com.android.tools.smali.dexlib2.analysis.reflection.util.ReflectionUtils
 import com.android.tools.smali.dexlib2.iface.Method
-import app.revanced.jadx.fingerprinting.ReVancedFingerprintPlugin
+import app.revanced.jadx.fingerprinting.ReVancedJadxPlugin
 import app.revanced.jadx.fingerprinting.core.ScriptEvaluation
 import app.revanced.jadx.fingerprinting.core.getShortId
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -32,29 +32,29 @@ class FingerprintResultPanel(
     private val scriptProvider: () -> String,
     private val clearAction: () -> Unit = {},
 ) : JPanel(BorderLayout()) {
-    private val log = KotlinLogging.logger("${ReVancedFingerprintPlugin.ID}/result-panel")
+    private val log = KotlinLogging.logger("${ReVancedJadxPlugin.ID}/result-panel")
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var matchedMethods = linkedSetOf<Method>()
     @Volatile private var cachedFingerprint: Fingerprint? = null
     private var currentPage = 0
     private var exhausted = false
-    private val copyIcon = ReVancedFingerprintPluginUi.inlineSvgIcon(Icons.copy(16))
+    private val copyIcon = ReVancedJadxPluginUi.inlineSvgIcon(Icons.copy(16))
 
     private val runButton = iconButton(
         "Run the script",
-        ReVancedFingerprintPluginUi.inlineSvgIcon(Icons.playArrow),
+        ReVancedJadxPluginUi.inlineSvgIcon(Icons.playArrow),
     )
     private val clearButton = iconButton(
         "Clear editor",
-        ReVancedFingerprintPluginUi.inlineSvgIcon(Icons.clear),
+        ReVancedJadxPluginUi.inlineSvgIcon(Icons.clear),
     )
     private val prevPageButton = iconButton(
         "Previous page",
-        ReVancedFingerprintPluginUi.inlineSvgIcon(Icons.previousArrow),
+        ReVancedJadxPluginUi.inlineSvgIcon(Icons.previousArrow),
     ).apply { isEnabled = false }
     private val nextPageButton = iconButton(
         "Next page / load more",
-        ReVancedFingerprintPluginUi.inlineSvgIcon(Icons.nextArrow),
+        ReVancedJadxPluginUi.inlineSvgIcon(Icons.nextArrow),
     ).apply { isEnabled = false }
 
     private val resultLabel = JLabel("Fingerprint result").apply {
@@ -168,7 +168,7 @@ class FingerprintResultPanel(
                 val needed = (currentPage + 1) * PAGE_SIZE
                 while (!exhausted && matchedMethods.size < needed) {
                     fp.ignoreSet = matchedMethods.toSet()
-                    val next = ReVancedFingerprintPluginUi.resolver.searchFingerprint(fp)
+                    val next = ReVancedJadxPluginUi.resolver.searchFingerprint(fp)
                     if (next != null) matchedMethods.add(next)
                     else exhausted = true
                 }
@@ -190,7 +190,7 @@ class FingerprintResultPanel(
 
         if (pageSlice.isEmpty()) {
             val msg = if (allResults.isEmpty()) "Fingerprint not found in the APK." else "No more results."
-            resultContentBox.add(ReVancedFingerprintPluginUi.createWrappedTextArea(msg).apply {
+            resultContentBox.add(ReVancedJadxPluginUi.createWrappedTextArea(msg).apply {
                 alignmentX = LEFT_ALIGNMENT
             })
         } else {
@@ -315,7 +315,7 @@ class FingerprintResultPanel(
 
     private fun showStatusText(text: String) {
         resultContentBox.removeAll()
-        resultContentBox.add(ReVancedFingerprintPluginUi.createWrappedTextArea(text).apply {
+        resultContentBox.add(ReVancedJadxPluginUi.createWrappedTextArea(text).apply {
             alignmentX = LEFT_ALIGNMENT
         })
         resultContentBox.revalidate()

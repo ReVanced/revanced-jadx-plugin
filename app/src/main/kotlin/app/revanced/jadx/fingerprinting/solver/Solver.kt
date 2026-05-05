@@ -2,7 +2,7 @@ package app.revanced.jadx.fingerprinting.solver
 
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.iface.Method
-import app.revanced.jadx.fingerprinting.ReVancedFingerprintPlugin
+import app.revanced.jadx.fingerprinting.ReVancedJadxPlugin
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.ArrayDeque
 
@@ -19,7 +19,7 @@ data class SolverSettings(
 )
 
 object Solver {
-    private val log = KotlinLogging.logger("${ReVancedFingerprintPlugin.ID}/solver")
+    private val log = KotlinLogging.logger("${ReVancedJadxPlugin.ID}/solver")
     @Volatile private var _methods: List<Method> = emptyList()
     @Volatile private var _solverSettings: SolverSettings = SolverSettings()
     @Volatile private var _methodFeatureList: Map<String, List<String>> = emptyMap()

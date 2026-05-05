@@ -3,7 +3,7 @@ package app.revanced.jadx.fingerprinting
 import app.revanced.jadx.fingerprinting.core.ReVancedResolver
 import app.revanced.jadx.fingerprinting.settings.PluginOptions
 import app.revanced.jadx.fingerprinting.solver.Solver
-import app.revanced.jadx.fingerprinting.ui.ReVancedFingerprintPluginUi
+import app.revanced.jadx.fingerprinting.ui.ReVancedJadxPluginUi
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jadx.api.plugins.JadxPlugin
 import jadx.api.plugins.JadxPluginContext
@@ -13,7 +13,7 @@ import lanchon.multidexlib2.BasicDexFileNamer
 import lanchon.multidexlib2.MultiDexIO
 import java.util.Properties
 
-class ReVancedFingerprintPlugin : JadxPlugin {
+class ReVancedJadxPlugin : JadxPlugin {
     companion object {
         const val ID = "revanced-jadx-plugin"
         private val log = KotlinLogging.logger("$ID/plugin")
@@ -21,7 +21,7 @@ class ReVancedFingerprintPlugin : JadxPlugin {
 
     private val meta: Properties by lazy {
         Properties().also { props ->
-            val stream = ReVancedFingerprintPlugin::class.java
+            val stream = ReVancedJadxPlugin::class.java
                 .getResourceAsStream("/META-INF/plugin.properties")
             if (stream == null) {
                 log.warn { "plugin.properties not found in classpath; using hardcoded fallbacks" }
@@ -49,7 +49,7 @@ class ReVancedFingerprintPlugin : JadxPlugin {
         this.context = init
         this.context.registerOptions(pluginOptions)
         if (!pluginOptions.enabled) {
-            log.info { "ReVanced fingerprint plugin is disabled" }
+            log.info { "ReVanced JADX plugin is disabled" }
             return
         }
         log.info { this.context.args }
@@ -68,7 +68,7 @@ class ReVancedFingerprintPlugin : JadxPlugin {
             .let(Solver::setMethods)
 
         Solver.setSettings(pluginOptions.toSolverSettings())
-        log.info { "ReVanced fingerprint plugin is enabled" }
-        this.context.guiContext?.let { ReVancedFingerprintPluginUi.init(this.context, revancedResolver) }
+        log.info { "ReVanced JADX plugin is enabled" }
+        this.context.guiContext?.let { ReVancedJadxPluginUi.init(this.context, revancedResolver) }
     }
 }

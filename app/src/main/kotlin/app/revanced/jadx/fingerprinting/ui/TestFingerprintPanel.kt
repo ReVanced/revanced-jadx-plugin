@@ -1,6 +1,6 @@
 package app.revanced.jadx.fingerprinting.ui
 
-import app.revanced.jadx.fingerprinting.ReVancedFingerprintPlugin
+import app.revanced.jadx.fingerprinting.ReVancedJadxPlugin
 import app.revanced.jadx.fingerprinting.ui.components.CodePanel
 import app.revanced.jadx.fingerprinting.ui.theme.applyEditorTheme
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -21,7 +21,7 @@ class TestFingerprintPanel(
     private val guiContext: JadxGuiContext,
 ) : JPanel(BorderLayout()) {
 
-    private val log = KotlinLogging.logger("${ReVancedFingerprintPlugin.ID}/test-panel")
+    private val log = KotlinLogging.logger("${ReVancedJadxPlugin.ID}/test-panel")
     private val codePanel = CodePanel()
     private val history = ArrayDeque<String>(HISTORY_MAX)
     private var historyIndex = -1

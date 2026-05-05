@@ -2,7 +2,7 @@ package app.revanced.jadx.fingerprinting.ui
 
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import app.revanced.jadx.fingerprinting.ReVancedFingerprintPlugin
+import app.revanced.jadx.fingerprinting.ReVancedJadxPlugin
 import app.revanced.jadx.fingerprinting.solver.Solver
 import app.revanced.jadx.fingerprinting.solver.SolverSettings
 import app.revanced.jadx.fingerprinting.ui.fingerprints.enumName
@@ -70,7 +70,7 @@ class BuildFingerprintPanel(
     private val context: JadxPluginContext,
     private val guiContext: JadxGuiContext,
 ) : JPanel(BorderLayout()) {
-    private val log = KotlinLogging.logger("${ReVancedFingerprintPlugin.ID}/build-panel")
+    private val log = KotlinLogging.logger("${ReVancedJadxPlugin.ID}/build-panel")
 
     private val modeCombo = JComboBox(PatchMode.entries.toTypedArray()).apply {
         renderer = object : DefaultListCellRenderer() {

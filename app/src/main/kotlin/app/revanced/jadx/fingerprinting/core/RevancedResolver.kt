@@ -1,6 +1,6 @@
 package app.revanced.jadx.fingerprinting.core
 
-import app.revanced.jadx.fingerprinting.ReVancedFingerprintPlugin
+import app.revanced.jadx.fingerprinting.ReVancedJadxPlugin
 import app.revanced.patcher.Fingerprint
 import app.revanced.patcher.Patcher
 import app.revanced.patcher.PatcherConfig
@@ -16,7 +16,7 @@ import java.io.File
 import java.util.UUID
 
 class ReVancedResolver {
-    private val log = KotlinLogging.logger("${ReVancedFingerprintPlugin.ID}/resolver")
+    private val log = KotlinLogging.logger("${ReVancedJadxPlugin.ID}/resolver")
     private lateinit var sourceApk: File
     private lateinit var patcherTemporaryFilesPath: File
 
