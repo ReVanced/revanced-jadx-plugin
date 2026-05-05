@@ -4,6 +4,8 @@ import app.revanced.jadx.fingerprinting.ReVancedJadxPlugin
 import app.revanced.patcher.Fingerprint
 import app.revanced.patcher.Patcher
 import app.revanced.patcher.PatcherConfig
+import app.revanced.patcher.PatcherContext
+import app.revanced.patcher.patch.Patch
 import app.revanced.patcher.patch.bytecodePatch
 import com.android.tools.smali.dexlib2.iface.Method
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -15,10 +17,18 @@ import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.util.UUID
 
-class ReVancedResolver {
+class ReVancedResolver : AutoCloseable {
     private val log = KotlinLogging.logger("${ReVancedJadxPlugin.ID}/resolver")
     private lateinit var sourceApk: File
     private lateinit var patcherTemporaryFilesPath: File
+
+    @Volatile private var cachedPatcher: Patcher? = null
+    private val executablePatchesField by lazy {
+        PatcherContext::class.java.getDeclaredField("executablePatches").also { it.isAccessible = true }
+    }
+    private val allPatchesField by lazy {
+        PatcherContext::class.java.getDeclaredField("allPatches").also { it.isAccessible = true }
+    }
 
     @OptIn(DelicateCoroutinesApi::class)
     fun createPatcher(sourceApk: File, patcherTemporaryFilesPath: File) {
@@ -35,14 +45,19 @@ class ReVancedResolver {
             log.error { "Patcher not initialized" }
             return null
         }
-        val patcher = Patcher(
-            PatcherConfig(
-                this.sourceApk,
-                this.patcherTemporaryFilesPath,
-                null,
-                this.patcherTemporaryFilesPath.absolutePath,
-            ),
-        )
+
+        val patcher = cachedPatcher ?: run {
+            log.info { "Creating new cached Patcher for $sourceApk" }
+            Patcher(
+                PatcherConfig(
+                    sourceApk,
+                    patcherTemporaryFilesPath,
+                    null,
+                    patcherTemporaryFilesPath.absolutePath,
+                ),
+            ).also { cachedPatcher = it }
+        }
+
         var searchResult: Method? = null
 
         val tempPatch = bytecodePatch(name = "Temporary patch for searching fingerprint") {
@@ -53,18 +68,28 @@ class ReVancedResolver {
             }
         }
 
-        patcher.use { p ->
-            p += setOf(tempPatch)
-            runBlocking {
-                p().collect { result ->
-                    val exception = result.exception
-                        ?: return@collect log.info { "\"${result.patch}\" succeeded" }
-                    log.error(exception) { "\"${result.patch}\" failed:\n" }
-                }
+        patcher += setOf(tempPatch)
+        runBlocking {
+            patcher().collect { result ->
+                val exception = result.exception
+                    ?: return@collect log.info { "\"${result.patch}\" succeeded" }
+                log.error(exception) { "\"${result.patch}\" failed:\n" }
             }
         }
-        log.info { "Outside of block $searchResult" }
+        clearPatches(patcher.context)
 
+        log.info { "Search result: $searchResult" }
         return searchResult
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun clearPatches(context: PatcherContext) {
+        (executablePatchesField.get(context) as MutableSet<Patch<*>>).clear()
+        (allPatchesField.get(context) as MutableSet<Patch<*>>).clear()
+    }
+
+    override fun close() {
+        cachedPatcher?.close()
+        cachedPatcher = null
     }
 }
