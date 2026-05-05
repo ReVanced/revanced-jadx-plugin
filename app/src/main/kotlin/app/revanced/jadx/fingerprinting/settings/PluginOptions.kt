@@ -27,7 +27,7 @@ class PluginOptions : BasePluginOptionsBuilder() {
         val id = ReVancedJadxPlugin.ID
 
         boolOption("$id.enabled")
-            .description("Enable ReVanced Fingerprint Plugin")
+            .description("Enable ReVanced JADX Plugin")
             .defaultValue(true)
             .setter { v -> enabled = v }
             .flags(OptionFlag.PER_PROJECT, OptionFlag.NOT_CHANGING_CODE)
