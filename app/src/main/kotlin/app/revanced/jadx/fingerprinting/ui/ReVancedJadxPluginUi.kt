@@ -33,6 +33,7 @@ object ReVancedJadxPluginUi {
     internal lateinit var resolver: ReVancedResolver
     private val iconCache = ConcurrentHashMap<String, FlatSVGIcon>()
     private var popupAwtListener: AWTEventListener? = null
+    private var popupActionsRegisteredFor: JadxGuiContext? = null
     private const val MENU_PREFIX = "ReVanced: "
     const val FRAME_NAME = "Evaluate Fingerprint"
     var fingerprintEvalFrame: JFrame? = null
@@ -70,6 +71,7 @@ object ReVancedJadxPluginUi {
     }
 
     private fun registerPopupActions() {
+        if (popupActionsRegisteredFor === guiContext) return
         guiContext.addPopupMenuAction(
             "${MENU_PREFIX}Open Result",
             { it is MethodNode }, null,
@@ -112,6 +114,7 @@ object ReVancedJadxPluginUi {
             { copyNodeClassAsImmutable(it) },
         )
 
+        popupActionsRegisteredFor = guiContext
         installPopupSeparator()
     }
 
