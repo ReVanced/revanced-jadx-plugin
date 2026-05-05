@@ -118,6 +118,15 @@ fun gettingFirstImmutableMethodOrNull(vararg matchStrings: String, block: _Metho
 
 fun gettingFirstMethodOrNull(vararg matchStrings: String, block: _MethodSpec.() -> Unit = {}): app.revanced.patcher.Fingerprint =
     gettingFirstMethodDeclaratively(*matchStrings, block = block)
+
+fun gettingFirstImmutableMethodDeclaratively(vararg matchStrings: String, block: _MethodSpec.() -> Unit = {}): app.revanced.patcher.Fingerprint =
+    gettingFirstMethodDeclaratively(*matchStrings, block = block)
+
+fun gettingFirstMethodDeclarativelyOrNull(vararg matchStrings: String, block: _MethodSpec.() -> Unit = {}): app.revanced.patcher.Fingerprint =
+    gettingFirstMethodDeclaratively(*matchStrings, block = block)
+
+fun gettingFirstImmutableMethodDeclarativelyOrNull(vararg matchStrings: String, block: _MethodSpec.() -> Unit = {}): app.revanced.patcher.Fingerprint =
+    gettingFirstMethodDeclaratively(*matchStrings, block = block)
 """
 
 object ScriptEvaluation {
