@@ -1,6 +1,5 @@
 package app.revanced.jadx.fingerprinting.runtime
 
-
 import kotlin.script.experimental.annotations.KotlinScript
 import kotlin.script.experimental.api.*
 import kotlin.script.experimental.jvm.dependenciesFromClassloader
