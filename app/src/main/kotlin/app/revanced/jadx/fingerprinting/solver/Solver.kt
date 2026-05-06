@@ -126,7 +126,7 @@ object Solver {
                 val newCombo = currentCombo + nextFeature
                 if (newCombo in seenCombinations) continue
 
-                val newCandidates = currentCandidates.intersect(featureToMethods[nextFeature] ?: emptySet())
+                val newCandidates = currentCandidates.intersect((featureToMethods[nextFeature] ?: emptySet()).toSet())
                 if (targetMethodId !in newCandidates || newCandidates.isEmpty()) continue
 
                 seenCombinations.add(newCombo)

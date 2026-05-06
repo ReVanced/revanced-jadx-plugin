@@ -38,6 +38,5 @@ object FingerprintScriptCompilationConfiguration :
         // allow loading deps compiled with newer Kotlin (e.g. revanced-patcher built with 2.3.0)
         compilerOptions.append("-Xskip-metadata-version-check")
     }) {
-    @Suppress("unused")
     private fun readResolve(): Any = this
 }

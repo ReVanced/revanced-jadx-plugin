@@ -5,6 +5,7 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.analysis.reflection.util.ReflectionUtils
 import app.revanced.jadx.fingerprinting.ReVancedJadxPlugin
 import app.revanced.jadx.fingerprinting.ui.ReVancedJadxPluginUi
+import app.revanced.jadx.fingerprinting.ui.builder.initMethodName
 import app.revanced.jadx.fingerprinting.ui.showCodeDialog
 import app.revanced.jadx.fingerprinting.ui.showError
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -26,7 +27,7 @@ internal fun ReVancedJadxPluginUi.copyFieldFingerprint(fieldNode: FieldNode) {
         val constValue: Any? = if (constVal != null && constVal != EncodedValue.NULL) constVal.value else null
 
         val putOpcode = fieldSetOpcode(dexType, isStatic)
-        val initMethod = if (isStatic) "<clinit>" else "<init>"
+        val initMethod = initMethodName(isStatic)
 
         val code = if (isFinal && constValue != null) {
             buildEncodedConstantCode(defClass, fieldName, putOpcode, initMethod, constValue, dexType, isStatic)
@@ -108,7 +109,7 @@ internal fun ReVancedJadxPluginUi.copyFieldAsNullifier(fieldNode: FieldNode) {
 
         val code = buildFieldNullifyCode(
             cls = defClass,
-            fieldName = fieldName,
+            fieldNames = listOf(fieldName),
             varName = "constructorFingerprint",
             isStatic = false,
         )
@@ -132,7 +133,7 @@ internal fun ReVancedJadxPluginUi.copyFieldAsStaticNullifier(fieldNode: FieldNod
 
         val code = buildFieldNullifyCode(
             cls = defClass,
-            fieldName = fieldName,
+            fieldNames = listOf(fieldName),
             varName = "staticInitFingerprint",
             isStatic = true,
         )
@@ -148,25 +149,30 @@ internal fun ReVancedJadxPluginUi.copyFieldAsStaticNullifier(fieldNode: FieldNod
     }
 }
 
-private fun buildFieldNullifyCode(
+internal fun buildFieldNullifyCode(
     cls: String,
-    fieldName: String,
+    fieldNames: List<String>,
     varName: String,
     isStatic: Boolean,
 ): String {
     val setNamesVar = if (isStatic) "nullStaticFieldNames" else "nullFieldNames"
-    val initMethod = if (isStatic) "<clinit>" else "<init>"
+    val initMethod = initMethodName(isStatic)
     val opcode = if (isStatic) "Opcode.SPUT_OBJECT" else "Opcode.IPUT_OBJECT"
     val smaliInject = if (isStatic)
         "                sput-object v0, \$fieldReference"
     else
         "                iput-object v0, p0, \$fieldReference"
+    val setRef = if (fieldNames.isNotEmpty()) setNamesVar else "setOf(/* field names */)"
 
     return buildString {
-        appendLine("private val $setNamesVar = setOf(\"$fieldName\")")
-        appendLine()
+        if (fieldNames.isNotEmpty()) {
+            appendLine("private val $setNamesVar = setOf(")
+            appendLine(fieldNames.joinToString(",\n") { "    \"$it\"" })
+            appendLine(")")
+            appendLine()
+        }
         appendLine("val $varName by gettingFirstMethodDeclaratively {")
-        appendLine("    definingClass(\"$cls\")")
+        if (cls.isNotEmpty()) appendLine("    definingClass(\"$cls\")")
         appendLine("    name(\"$initMethod\")")
         appendLine("}")
         appendLine()
@@ -176,7 +182,7 @@ private fun buildFieldNullifyCode(
         appendLine("    .mapIndexedNotNull { index, instruction ->")
         appendLine("        if (instruction.opcode != $opcode) return@mapIndexedNotNull null")
         appendLine("        val reference = (instruction as ReferenceInstruction).reference.toString()")
-        appendLine("        if ($setNamesVar.none { reference.contains(it) }) return@mapIndexedNotNull null")
+        appendLine("        if ($setRef.none { reference.contains(it) }) return@mapIndexedNotNull null")
         appendLine("        index to reference")
         appendLine("    }")
         appendLine("    .sortedByDescending { it.first }")

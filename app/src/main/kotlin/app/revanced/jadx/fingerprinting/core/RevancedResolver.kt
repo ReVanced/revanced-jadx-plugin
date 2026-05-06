@@ -69,16 +69,16 @@ class ReVancedResolver : AutoCloseable {
 
     private fun extractMethodsFromPatcher(patcher: Patcher): List<Method> {
         val bytecodeCtx = bytecodeContextField.get(patcher.context)
-        val classesField = findFieldByName(bytecodeCtx.javaClass, "classes")
+        val classesField = findClassesField(bytecodeCtx.javaClass)
             ?: throw NoSuchFieldException("'classes' field not found in ${bytecodeCtx.javaClass.name}")
         @Suppress("UNCHECKED_CAST")
         return (classesField.get(bytecodeCtx) as Iterable<ClassDef>).flatMap { it.methods }
     }
 
-    private fun findFieldByName(cls: Class<*>, name: String): Field? {
+    private fun findClassesField(cls: Class<*>): Field? {
         var c: Class<*>? = cls
         while (c != null) {
-            try { return c.getDeclaredField(name).also { it.isAccessible = true } }
+            try { return c.getDeclaredField("classes").also { it.isAccessible = true } }
             catch (_: NoSuchFieldException) { c = c.superclass }
         }
         return null
