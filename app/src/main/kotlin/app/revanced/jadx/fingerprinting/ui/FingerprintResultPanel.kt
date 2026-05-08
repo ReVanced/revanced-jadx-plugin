@@ -147,7 +147,7 @@ class FingerprintResultPanel(
                     }
 
                     val fp = extractFingerprint(evalResult!!) { msg ->
-                        scope.launch(Dispatchers.Swing) {
+                        withContext(Dispatchers.Swing) {
                             showStatusText(msg)
                             setControlsEnabled(true)
                         }
@@ -331,9 +331,9 @@ class FingerprintResultPanel(
         }
     }
 
-    private fun extractFingerprint(
+    private suspend fun extractFingerprint(
         evalResult: ResultWithDiagnostics<EvaluationResult>,
-        onError: (String) -> Unit,
+        onError: suspend (String) -> Unit,
     ): Fingerprint? = when (evalResult) {
         is ResultWithDiagnostics.Failure -> {
             val msgs = buildString {
