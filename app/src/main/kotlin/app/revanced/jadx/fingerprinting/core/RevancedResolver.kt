@@ -24,7 +24,7 @@ class ReVancedResolver : AutoCloseable {
     private lateinit var sourceApk: File
     private lateinit var patcherTemporaryFilesPath: File
 
-    @Volatile private var cachedPatcher: Patcher? = null
+    private var cachedPatcher: Patcher? = null
     private val executablePatchesField by lazy {
         PatcherContext::class.java.getDeclaredField("executablePatches").also { it.isAccessible = true }
     }
@@ -48,7 +48,9 @@ class ReVancedResolver : AutoCloseable {
             ScriptEvaluation.preload()
             try {
                 log.info { "Eagerly initializing Patcher for $sourceApk" }
-                val patcher = buildPatcher().also { cachedPatcher = it }
+                val patcher = synchronized(this@ReVancedResolver) {
+                    cachedPatcher ?: buildPatcher().also { cachedPatcher = it }
+                }
                 val methods = extractMethodsFromPatcher(patcher)
                 log.info { "Extracted ${methods.size} methods from Patcher context" }
                 onMethodsLoaded(methods)
@@ -90,9 +92,11 @@ class ReVancedResolver : AutoCloseable {
             return null
         }
 
-        val patcher = cachedPatcher ?: run {
-            log.warn { "Patcher not yet ready; creating synchronously for $sourceApk" }
-            buildPatcher().also { cachedPatcher = it }
+        val patcher = synchronized(this) {
+            cachedPatcher ?: run {
+                log.warn { "Patcher not yet ready; creating synchronously for $sourceApk" }
+                buildPatcher().also { cachedPatcher = it }
+            }
         }
 
         var searchResult: Method? = null
@@ -126,7 +130,9 @@ class ReVancedResolver : AutoCloseable {
     }
 
     override fun close() {
-        cachedPatcher?.close()
-        cachedPatcher = null
+        synchronized(this) {
+            cachedPatcher?.close()
+            cachedPatcher = null
+        }
     }
 }
