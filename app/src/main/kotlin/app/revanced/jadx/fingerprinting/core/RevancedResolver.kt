@@ -39,6 +39,7 @@ class ReVancedResolver : AutoCloseable {
     fun createPatcher(
         sourceApk: File,
         patcherTemporaryFilesPath: File,
+        onError: (Throwable) -> Unit = {},
         onMethodsLoaded: (List<Method>) -> Unit = {},
     ) {
         this.sourceApk = sourceApk
@@ -51,12 +52,31 @@ class ReVancedResolver : AutoCloseable {
                 val patcher = synchronized(this@ReVancedResolver) {
                     cachedPatcher ?: buildPatcher().also { cachedPatcher = it }
                 }
+                validateReflection()
                 val methods = extractMethodsFromPatcher(patcher)
                 log.info { "Extracted ${methods.size} methods from Patcher context" }
                 onMethodsLoaded(methods)
             } catch (e: Exception) {
                 log.error(e) { "Failed to eagerly initialize Patcher or extract methods" }
+                onError(e)
             }
+        }
+    }
+
+    /**
+     * Forces eager initialization of all reflected [PatcherContext] fields.
+     * Converts [NoSuchFieldException] into a descriptive [IllegalStateException] so
+     * renames in the patcher API surface a clear error at init time rather than
+     * silently crashing later inside [extractMethodsFromPatcher] or [clearPatches].
+     */
+    private fun validateReflection() {
+        try {
+            executablePatchesField; allPatchesField; bytecodeContextField
+        } catch (e: NoSuchFieldException) {
+            throw IllegalStateException(
+                "PatcherContext internal field inaccessible, patcher API may have changed.\nCheck field names in resolver.\n${e.message}",
+                e,
+            )
         }
     }
 
