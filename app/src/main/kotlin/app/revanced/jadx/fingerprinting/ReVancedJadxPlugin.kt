@@ -59,7 +59,13 @@ class ReVancedJadxPlugin : JadxPlugin {
             return
         }
         Solver.setSettings(pluginOptions.toSolverSettings())
-        revancedResolver.createPatcher(sourceApk, this.context.files().pluginTempDir.toFile()) { methods ->
+        revancedResolver.createPatcher(
+            sourceApk,
+            this.context.files().pluginTempDir.toFile(),
+            onError = { e ->
+                log.error(e) { "Failed to initialize patcher, fingerprint search will be unavailable!" }
+            }
+        ) { methods ->
             Solver.setMethods(methods)
         }
         log.info { "ReVanced JADX plugin is enabled" }
