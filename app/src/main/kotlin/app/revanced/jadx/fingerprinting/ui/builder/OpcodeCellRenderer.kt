@@ -9,7 +9,7 @@ import javax.swing.ListCellRenderer
 
 /**
  * Renders DEX [Opcode] entries as checkbox rows. The check state reflects membership
- * in [checkedOpcodes]; the renderer does not mutate the set itself — the owning panel
+ * in [checkedOpcodes]; the renderer does not mutate the set itself - the owning panel
  * handles toggling via mouse clicks.
  */
 internal class OpcodeCellRenderer(

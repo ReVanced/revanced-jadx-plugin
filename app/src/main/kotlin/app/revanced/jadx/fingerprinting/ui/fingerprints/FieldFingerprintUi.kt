@@ -56,7 +56,7 @@ private fun buildEncodedConstantCode(
     dexType: String,
     isStatic: Boolean,
 ): String = buildString {
-    appendLine("// '$fieldName' has an encoded constant — no ${putOpcode.name} in $initMethod.")
+    appendLine("// '$fieldName' has an encoded constant - no ${putOpcode.name} in $initMethod.")
     appendLine("// Eval page runs the last expression. Delete the option you don't need.")
     appendLine()
     appendLine("// Option A: match defining class directly")
