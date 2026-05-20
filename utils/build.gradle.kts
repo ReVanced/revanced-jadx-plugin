@@ -7,6 +7,9 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+val projectVersion: String = project.version.toString().takeIf { it != "unspecified" } ?: "1.0.0"
+val projectDescription: String = project.description ?: ""
+
 val friends = configurations.create("friends") {
     isCanBeResolved = true
     isCanBeConsumed = false
@@ -41,12 +44,14 @@ java {
 tasks {
     shadowJar {
         archiveBaseName.set("utils-shadow")
+        archiveVersion.set(projectVersion)
         archiveClassifier.set("")
-        archiveVersion.set(if (project.version == "unspecified") "1.0.0" else project.version.toString())
         mergeServiceFiles()
     }
 
     register<Copy>("copyJarToApp") {
+        description = projectDescription
+        version = projectVersion
         dependsOn(shadowJar)
         from("${layout.buildDirectory}/libs/utils-shadow.jar")
         //Module app /libs

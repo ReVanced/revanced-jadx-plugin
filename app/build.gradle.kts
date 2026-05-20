@@ -6,7 +6,12 @@ plugins {
     alias(libs.plugins.shadow)
 }
 
+val projectVersion: String = project.version.toString().takeIf { it != "unspecified" } ?: "1.0.0"
+val projectDescription: String = project.description ?: ""
+
 val generatePluginMeta by tasks.registering {
+    version = projectVersion
+    description = projectDescription
     val outDir = layout.buildDirectory.dir("generated/plugin-meta")
     outputs.dir(outDir)
     doLast {
@@ -15,9 +20,9 @@ val generatePluginMeta by tasks.registering {
             writeText("""
                 plugin.id=revanced-jadx-plugin
                 plugin.name=ReVanced JADX Plugin
-                plugin.description=Plugin to assist with patch tests and creation for ReVanced
+                plugin.description=$projectDescription
                 plugin.homepage=https://github.com/ReVanced/revanced-jadx-plugin
-                plugin.version=${project.version}
+                plugin.version=$projectVersion
             """.trimIndent())
         }
     }
@@ -32,13 +37,9 @@ dependencies {
     implementation(libs.flatlaf.extras)
     implementation(libs.rsyntaxtextarea)
     implementation(libs.autocomplete)
-
     implementation(libs.bundles.logging)
-
     implementation(libs.bundles.scripting)
-
     api(libs.bundles.revanced)
-
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.kotlin.test)
@@ -74,13 +75,14 @@ tasks {
     }
     shadowJar {
         archiveBaseName.set("revanced-jadx-plugin")
-        archiveVersion.set(project.version.toString())
+        archiveVersion.set(projectVersion)
         archiveClassifier.set("") // remove '-all' suffix
         manifest {
             attributes(
                 "Plugin-Id" to "revanced-jadx-plugin",
                 "Plugin-Name" to "ReVanced JADX Plugin",
-                "Plugin-Version" to project.version.toString(),
+                "Plugin-Version" to projectVersion,
+                "Plugin-Description" to projectDescription,
             )
         }
         mergeServiceFiles()
@@ -91,6 +93,8 @@ tasks {
 
     // copy result jar into "build/dist" directory
     register<Copy>("dist") {
+        description = projectDescription
+        version = projectVersion
         dependsOn(shadowJar)
         dependsOn(withType(Jar::class))
         from(shadowJar)
