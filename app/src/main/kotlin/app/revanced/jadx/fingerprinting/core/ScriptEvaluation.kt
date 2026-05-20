@@ -22,6 +22,8 @@ private val SCRIPT_PRELUDE: String = ScriptEvaluation::class.java
     ?.use { it.readText() }
     ?: error("Missing required classpath resource: $RESOURCE_PRELUDE")
 
+internal val SCRIPT_PRELUDE_LINE_COUNT: Int = SCRIPT_PRELUDE.count { it == '\n' }
+
 object ScriptEvaluation {
     private val log = KotlinLogging.logger("${ReVancedJadxPlugin.ID}/script-eval")
     private val fingerprintScriptEvaluationConfiguration = ScriptEvaluationConfiguration {

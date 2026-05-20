@@ -4,6 +4,7 @@ import app.revanced.patcher.Fingerprint
 import com.android.tools.smali.dexlib2.analysis.reflection.util.ReflectionUtils
 import com.android.tools.smali.dexlib2.iface.Method
 import app.revanced.jadx.fingerprinting.ReVancedJadxPlugin
+import app.revanced.jadx.fingerprinting.core.SCRIPT_PRELUDE_LINE_COUNT
 import app.revanced.jadx.fingerprinting.core.ScriptEvaluation
 import app.revanced.jadx.fingerprinting.core.getShortId
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -339,8 +340,12 @@ class FingerprintResultPanel(
             val msgs = buildString {
                 appendLine("Script evaluation failed:")
                 evalResult.reports.forEach { report ->
-                    appendLine("  ${report.severity}: ${report.message}")
-                    log.error { "  ${report.severity}: ${report.message}" }
+                    val userLine = report.location?.start?.line
+                        ?.minus(SCRIPT_PRELUDE_LINE_COUNT)
+                        ?.takeIf { it >= 1 }
+                    val locPart = userLine?.let { " (line $it)" } ?: ""
+                    appendLine("  ${report.severity}: ${report.message}$locPart")
+                    log.error { "  ${report.severity}: ${report.message}$locPart" }
                 }
             }
             onError(msgs.trim())
