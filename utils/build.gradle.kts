@@ -4,8 +4,11 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.kotlin)
     alias(libs.plugins.shadow)
-    kotlin("plugin.serialization") version "2.1.20"
+    alias(libs.plugins.kotlin.serialization)
 }
+
+val projectVersion: String = project.version.toString().takeIf { it != "unspecified" } ?: "1.0.0"
+val projectDescription: String = project.description ?: ""
 
 val friends = configurations.create("friends") {
     isCanBeResolved = true
@@ -40,19 +43,16 @@ java {
 
 tasks {
     shadowJar {
-        //    minimize {
-        //        exclude(dependency("org.bouncycastle:.*"))
-        //        exclude(dependency("app.revanced:revanced-patcher"))
-        //    }
         archiveBaseName.set("utils-shadow")
+        archiveVersion.set(projectVersion)
         archiveClassifier.set("")
-        archiveVersion.set("")
         mergeServiceFiles()
     }
 
     register<Copy>("copyJarToApp") {
+        description = projectDescription
+        version = projectVersion
         dependsOn(shadowJar)
-
         from("${layout.buildDirectory}/libs/utils-shadow.jar")
         //Module app /libs
         into("${project.rootDir}/app/libs")

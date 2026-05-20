@@ -1,4 +1,4 @@
-package com.valonso.utils
+package app.revanced.utils
 
 import app.revanced.patcher.extensions.InstructionExtensions.instructionsOrNull
 import com.android.tools.smali.dexlib2.AccessFlags
