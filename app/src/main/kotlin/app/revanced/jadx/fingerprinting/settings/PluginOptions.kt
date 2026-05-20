@@ -90,6 +90,12 @@ class PluginOptions : BasePluginOptionsBuilder() {
             .setter { v -> updateEditor { copy(lintDebounceMs = v) } }
             .flags(OptionFlag.PER_PROJECT, OptionFlag.NOT_CHANGING_CODE)
 
+        intOption("$id.editor.lint-timeout-ms")
+            .description("Linter timeout per compile attempt")
+            .defaultValue(EDITOR_DEFAULTS.lintTimeoutMs)
+            .setter { v -> updateEditor { copy(lintTimeoutMs = v) } }
+            .flags(OptionFlag.PER_PROJECT, OptionFlag.NOT_CHANGING_CODE)
+
         boolOption("$id.editor.autocomplete-enabled")
             .description("Auto-show autocomplete popup as you type (vs. only on Ctrl+Space)")
             .defaultValue(EDITOR_DEFAULTS.autoCompleteEnabled)

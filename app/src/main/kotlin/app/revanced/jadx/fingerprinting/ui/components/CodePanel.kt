@@ -25,6 +25,8 @@ class CodePanel(
         val enableLinting: Boolean = true,
         // Milliseconds of inactivity before [KotlinScriptParser] re-compiles.
         val lintDebounceMs: Int = 800,
+        // Prevent hanging by adding a timeout for a single compile attempt.
+        val lintTimeoutMs: Int = 10000,
         // Show autocomplete popup as user types (vs. only on Ctrl + Space).
         val autoCompleteEnabled: Boolean = true,
         // Milliseconds of inactivity before autocomplete popup appears.
@@ -168,7 +170,7 @@ class CodePanel(
         when {
             want && !have -> {
                 lintParser = KotlinScriptParser(
-                    compileAsync = { ScriptEvaluation.compileDiagnostics(it) },
+                    compileAsync = { ScriptEvaluation.compileDiagnostics(it, settings.lintTimeoutMs.toLong()) },
                     preludeLineOffset = SCRIPT_PRELUDE_LINE_COUNT,
                     textArea = codeArea,
                 ).also {

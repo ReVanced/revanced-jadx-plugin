@@ -4,6 +4,7 @@ import app.revanced.jadx.fingerprinting.ReVancedJadxPlugin
 import app.revanced.jadx.fingerprinting.runtime.FingerprintScript
 import app.revanced.jadx.fingerprinting.runtime.FingerprintScriptCompilationConfiguration
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.script.experimental.api.CompiledScript
 import kotlin.script.experimental.api.EvaluationResult
 import kotlin.script.experimental.api.ResultWithDiagnostics
@@ -54,10 +55,15 @@ object ScriptEvaluation {
         return scriptingHost.eval(source, FingerprintScriptCompilationConfiguration, fingerprintScriptEvaluationConfiguration)
     }
 
-    suspend fun compileDiagnostics(script: String): List<ScriptDiagnostic> {
+    suspend fun compileDiagnostics(script: String, timeoutMs: Long = 10_000): List<ScriptDiagnostic> {
         val source = (SCRIPT_PRELUDE + "\n" + script).toScriptSource()
-        val result: ResultWithDiagnostics<CompiledScript> =
+        val result: ResultWithDiagnostics<CompiledScript>? = withTimeoutOrNull(timeoutMs.milliseconds) {
             scriptingHost.compiler.invoke(source, FingerprintScriptCompilationConfiguration)
+        }
+        if (result == null) {
+            log.warn { "Script compilation exceeded ${timeoutMs}ms; skipping diagnostics for this attempt" }
+            return emptyList()
+        }
         return result.reports
     }
 }
