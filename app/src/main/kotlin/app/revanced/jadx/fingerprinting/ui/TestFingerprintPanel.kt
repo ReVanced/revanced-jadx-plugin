@@ -22,7 +22,7 @@ class TestFingerprintPanel(
 ) : JPanel(BorderLayout()) {
 
     private val log = KotlinLogging.logger("${ReVancedJadxPlugin.ID}/test-panel")
-    private val codePanel = CodePanel(enableLinting = true)
+    private val codePanel = CodePanel()
     private val history = ArrayDeque<String>(HISTORY_MAX)
     private var historyIndex = -1
     private val backBtn = JButton("◀").apply { toolTipText = "Previous script"; isEnabled = false }
