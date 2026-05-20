@@ -4,9 +4,6 @@ import app.revanced.jadx.fingerprinting.core.SCRIPT_PRELUDE_LINE_COUNT
 import app.revanced.jadx.fingerprinting.core.ScriptEvaluation
 import jadx.gui.utils.ui.MousePressedHandler
 import org.fife.ui.autocomplete.AutoCompletion
-import org.fife.ui.autocomplete.CompletionProvider
-import org.fife.ui.autocomplete.DefaultCompletionProvider
-import org.fife.ui.autocomplete.TemplateCompletion
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea
 import org.fife.ui.rsyntaxtextarea.Theme
 import org.fife.ui.rtextarea.LineNumberFormatter
@@ -14,52 +11,103 @@ import org.fife.ui.rtextarea.LineNumberList
 import org.fife.ui.rtextarea.RTextScrollPane
 import java.awt.BorderLayout
 import java.awt.event.MouseEvent
-import javax.swing.*
+import javax.swing.JPanel
+import javax.swing.SwingUtilities
 import javax.swing.border.EmptyBorder
 import kotlin.math.log10
 
-class CodePanel(enableLinting: Boolean = false) : JPanel() {
+class CodePanel(
+    initialSettings: Settings = EditorSettingsHolder.current(),
+) : JPanel(BorderLayout()) {
+
+    data class Settings(
+        // Enable Kotlin lint.
+        val enableLinting: Boolean = true,
+        // Milliseconds of inactivity before [KotlinScriptParser] re-compiles.
+        val lintDebounceMs: Int = 800,
+        // Show autocomplete popup as user types (vs. only on Ctrl + Space).
+        val autoCompleteEnabled: Boolean = true,
+        // Milliseconds of inactivity before autocomplete popup appears.
+        val autoCompleteDelayMs: Int = 300,
+        // Show param-hint popups after `(`.
+        val parameterAssistance: Boolean = true,
+        // Tab-line guides painted.
+        val paintTabLines: Boolean = true,
+        // Text anti-aliasing.
+        val antiAliasing: Boolean = true,
+        // Auto-indent on newline.
+        val enableAutoIndent: Boolean = true,
+        // Visible whitespace markers.
+        val whitespaceCharacters: Boolean = false,
+    )
+
+    private var settings: Settings = initialSettings
+
     private val codeArea: RSyntaxTextArea = RSyntaxTextArea()
     private val codeScrollPane: RTextScrollPane
 
     private var useSourceLines = false
 
-    private val lintParser: KotlinScriptParser? = if (enableLinting) {
-        KotlinScriptParser(
-            compileAsync = { ScriptEvaluation.compileDiagnostics(it) },
-            preludeLineOffset = SCRIPT_PRELUDE_LINE_COUNT,
-            textArea = codeArea,
-        )
-    } else {
-        null
-    }
+    private var lintParser: KotlinScriptParser? = null
+    private var autoCompletion: AutoCompletion? = null
+    private var settingsSubscription: AutoCloseable? = null
 
     init {
-        this.codeArea.setSyntaxEditingStyle(RSyntaxTextArea.SYNTAX_STYLE_KOTLIN)
+        codeArea.syntaxEditingStyle = RSyntaxTextArea.SYNTAX_STYLE_KOTLIN
         RSyntaxTextArea.setTemplatesEnabled(true)
-        this.codeArea.setAntiAliasingEnabled(true)
-        lintParser?.let {
-            // reparse delay after the last keystroke
-            // todo: make these user editable settings
-            this.codeArea.parserDelay = 800
-            this.codeArea.addParser(it)
-        }
-        this.codeScrollPane = RTextScrollPane(codeArea)
-        setLayout(BorderLayout())
-        setBorder(EmptyBorder(0, 0, 0, 0))
+        applyTextAreaFlags()
+        applyLintingState()
+        codeScrollPane = RTextScrollPane(codeArea)
+        border = EmptyBorder(0, 0, 0, 0)
         add(codeScrollPane, BorderLayout.CENTER)
         initLinesModeSwitch()
-        val ac = AutoCompletion(createCompletionProvider())
-        // todo: make these user editable settings
-        ac.isParameterAssistanceEnabled = true
-        ac.isAutoActivationEnabled = true
-        ac.autoActivationDelay = 300
-        ac.install(codeArea)
+        applyAutoCompleteState()
+        openSettingsSubscription()
     }
 
     override fun removeNotify() {
         super.removeNotify()
-        lintParser?.dispose()
+        settingsSubscription?.close()
+        settingsSubscription = null
+        lintParser?.let {
+            codeArea.removeParser(it)
+            it.dispose()
+        }
+        lintParser = null
+        autoCompletion?.uninstall()
+        autoCompletion = null
+    }
+
+    fun applySettings(new: Settings) {
+        val old = settings
+        if (old == new) return
+        settings = new
+
+        // RSyntaxTextArea flags
+        if (old.antiAliasing != new.antiAliasing) codeArea.antiAliasingEnabled = new.antiAliasing
+        if (old.paintTabLines != new.paintTabLines) codeArea.paintTabLines = new.paintTabLines
+        if (old.enableAutoIndent != new.enableAutoIndent) codeArea.isAutoIndentEnabled = new.enableAutoIndent
+        if (old.whitespaceCharacters != new.whitespaceCharacters) codeArea.isWhitespaceVisible = new.whitespaceCharacters
+
+        // Kotlin lint
+        if (old.lintDebounceMs != new.lintDebounceMs) codeArea.parserDelay = new.lintDebounceMs
+
+        // Lint enable/disable handler
+        if (old.enableLinting != new.enableLinting) applyLintingState()
+
+        // Autocomplete toggle
+        if (old.autoCompleteEnabled != new.autoCompleteEnabled) {
+            applyAutoCompleteState()
+        } else {
+            autoCompletion?.let { ac ->
+                if (old.autoCompleteDelayMs != new.autoCompleteDelayMs) {
+                    ac.autoActivationDelay = new.autoCompleteDelayMs
+                }
+                if (old.parameterAssistance != new.parameterAssistance) {
+                    ac.isParameterAssistanceEnabled = new.parameterAssistance
+                }
+            }
+        }
     }
 
     var text: String
@@ -72,6 +120,22 @@ class CodePanel(enableLinting: Boolean = false) : JPanel() {
     fun setEditable(editable: Boolean) {
         codeArea.isEditable = editable
         codeArea.highlightCurrentLine = editable
+        if (editable) {
+            if (settingsSubscription == null) {
+                applySettings(EditorSettingsHolder.current())
+                openSettingsSubscription()
+            }
+        } else {
+            settingsSubscription?.close()
+            settingsSubscription = null
+            applySettings(settings.copy(enableLinting = false))
+        }
+    }
+
+    private fun openSettingsSubscription() {
+        settingsSubscription = EditorSettingsHolder.subscribe { new ->
+            SwingUtilities.invokeLater { applySettings(new) }
+        }
     }
 
     fun setTheme(theme: Theme) {
@@ -90,6 +154,56 @@ class CodePanel(enableLinting: Boolean = false) : JPanel() {
         codeArea.revalidate()
         codeArea.repaint()
     }
+    
+    private fun applyTextAreaFlags() {
+        codeArea.antiAliasingEnabled = settings.antiAliasing
+        codeArea.paintTabLines = settings.paintTabLines
+        codeArea.isAutoIndentEnabled = settings.enableAutoIndent
+        codeArea.isWhitespaceVisible = settings.whitespaceCharacters
+    }
+
+    private fun applyLintingState() {
+        val want = settings.enableLinting
+        val have = lintParser != null
+        when {
+            want && !have -> {
+                lintParser = KotlinScriptParser(
+                    compileAsync = { ScriptEvaluation.compileDiagnostics(it) },
+                    preludeLineOffset = SCRIPT_PRELUDE_LINE_COUNT,
+                    textArea = codeArea,
+                ).also {
+                    codeArea.parserDelay = settings.lintDebounceMs
+                    codeArea.addParser(it)
+                }
+            }
+            !want && have -> {
+                lintParser?.let {
+                    codeArea.removeParser(it)
+                    it.dispose()
+                }
+                lintParser = null
+            }
+        }
+    }
+
+    private fun applyAutoCompleteState() {
+        val want = settings.autoCompleteEnabled
+        val have = autoCompletion != null
+        when {
+            want && !have -> {
+                autoCompletion = AutoCompletion(KotlinScriptCompletions.create()).apply {
+                    isParameterAssistanceEnabled = settings.parameterAssistance
+                    isAutoActivationEnabled = true
+                    autoActivationDelay = settings.autoCompleteDelayMs
+                    install(codeArea)
+                }
+            }
+            !want && have -> {
+                autoCompletion?.uninstall()
+                autoCompletion = null
+            }
+        }
+    }
 
     @Synchronized
     private fun applyLineFormatter() {
@@ -106,59 +220,6 @@ class CodePanel(enableLinting: Boolean = false) : JPanel() {
                 gutterComp.addMouseListener(lineModeSwitch)
             }
         }
-    }
-
-    fun createCompletionProvider(): CompletionProvider {
-        val provider = DefaultCompletionProvider()
-
-        fun tpl(input: String, shortDesc: String, template: String) {
-            provider.addCompletion(TemplateCompletion(provider, input, shortDesc, template))
-        }
-
-        tpl("fingerprint", "fingerprint { … }", "fingerprint {\n\t\${cursor}\n}")
-        
-        listOf(
-            "gettingFirstMethodDeclaratively",
-            "gettingFirstMethodDeclarativelyOrNull",
-            "gettingFirstImmutableMethodDeclaratively",
-            "gettingFirstImmutableMethodDeclarativelyOrNull",
-            "gettingFirstMethod",
-            "gettingFirstMethodOrNull",
-            "gettingFirstImmutableMethod",
-            "gettingFirstImmutableMethodOrNull",
-            "composingFirstMethod",
-        ).forEach { fn ->
-            tpl(fn, "$fn { … }", "$fn {\n\t\${cursor}\n}")
-            tpl(fn, "$fn(\"…\") { … }", "$fn(\"\${str}\") {\n\t\${cursor}\n}")
-        }
-
-        listOf(
-            "gettingFirstClassDef",
-            "gettingFirstClassDefOrNull",
-            "gettingFirstImmutableClassDef",
-            "gettingFirstImmutableClassDefOrNull",
-            "gettingFirstClassDefDeclaratively",
-            "gettingFirstClassDefDeclarativelyOrNull",
-            "gettingFirstImmutableClassDefDeclaratively",
-            "gettingFirstImmutableClassDefDeclarativelyOrNull",
-        ).forEach { fn ->
-            tpl(fn, "$fn(\"L…;\")", "$fn(\"\${cursor}\")")
-            tpl(fn, "$fn(\"L…;\") { … }", "$fn(\"\${descriptor}\") {\n\t\${cursor}\n}")
-        }
-
-        tpl("definingClass", "definingClass(\"L…;\")", "definingClass(\"\${cursor}\")")
-        tpl("name", "name(\"…\")", "name(\"\${cursor}\")")
-        tpl("returnType", "returnType(\"…\")", "returnType(\"\${cursor}\")")
-        tpl("parameterTypes", "parameterTypes(\"…\", …)", "parameterTypes(\"\${cursor}\")")
-        tpl("accessFlags", "accessFlags(AccessFlags.…)", "accessFlags(AccessFlags.\${cursor})")
-        tpl("opcodes", "opcodes(Opcode.…)", "opcodes(Opcode.\${cursor})")
-        tpl("opcodesPattern", "opcodesPattern(\"smali …\")", "opcodesPattern(\"\"\"\n\t\${cursor}\n\"\"\")")
-        tpl("strings", "strings(\"…\")", "strings(\"\${cursor}\")")
-        tpl("custom", "custom { method, classDef -> … }", "custom { method, classDef ->\n\t\${cursor}\n}")
-        tpl("returns", "returns(\"…\") - return type", "returns(\"\${cursor}\")")
-        tpl("parameters", "parameters(\"…\") - parameter types", "parameters(\"\${cursor}\")")
-
-        return provider
     }
 
     companion object {
