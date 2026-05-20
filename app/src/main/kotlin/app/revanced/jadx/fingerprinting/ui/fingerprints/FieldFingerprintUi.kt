@@ -219,3 +219,155 @@ internal fun fieldGetOpcode(dexType: String, isStatic: Boolean): Opcode = when {
     dexType.startsWith("L") || dexType.startsWith("[") -> if (isStatic) Opcode.SGET_OBJECT else Opcode.IGET_OBJECT
     else -> if (isStatic) Opcode.SGET else Opcode.IGET
 }
+
+internal fun ReVancedJadxPluginUi.copyFieldAsValueVariable(fieldNode: FieldNode) {
+    try {
+        val defClass = ReflectionUtils.javaToDexName(fieldNode.parentClass.rawName)
+        val fieldName = fieldNode.fieldInfo.name
+        val shortId = fieldNode.fieldInfo.shortId
+        val dexType = shortId.substringAfter(':')
+        val isStatic = fieldNode.isStatic
+        val constVal = fieldNode.get(JadxAttrType.CONSTANT_VALUE)
+        val hasEncodedConstant = constVal != null && constVal != EncodedValue.NULL
+
+        val code = buildValueVariableCode(defClass, fieldName, dexType, isStatic, hasEncodedConstant)
+
+        log.info { "Generated value variable for $defClass->$shortId" }
+        showCodeDialog(
+            title = "Copy as Value Variable - $fieldName",
+            code = code,
+            subtitle = "<b>$shortId</b> in <tt>$defClass</tt>",
+        )
+    } catch (e: Exception) {
+        log.error(e) { "Failed to generate field value variable" }
+        showError("Failed to generate value variable: ${e.message}")
+    }
+}
+
+private fun buildValueVariableCode(
+    defClass: String,
+    fieldName: String,
+    dexType: String,
+    isStatic: Boolean,
+    hasEncodedConstant: Boolean,
+): String = buildString {
+    when {
+        isStatic && hasEncodedConstant -> {
+            val evClass = encodedValueClassFor(dexType)
+            val ktType = kotlinTypeFor(dexType)
+            val mutateLine = mutableInitialValueExample(dexType)
+            appendLine("// Option A: immutable, preferred for read-only patches")
+            appendLine("internal val BytecodePatchContext.classDef by gettingFirstImmutableClassDef(\"$defClass\")")
+            appendLine("//")
+            appendLine("// Option B: mutable, required if you want to overwrite fieldRef.initialValue")
+            appendLine("// internal val BytecodePatchContext.classDef by gettingFirstClassDef(\"$defClass\")")
+            appendLine()
+            appendLine("apply {")
+            appendLine("    val fieldRef = classDef.fields.firstOrNull { it.name == \"$fieldName\" }")
+            appendLine("        ?: throw PatchException(\"Could not find field '$fieldName'\")")
+            appendLine()
+            appendLine("    // Read value, both options work")
+            appendLine("    val currentValue: $ktType = (fieldRef.initialValue as $evClass).value")
+            if (mutateLine != null) {
+                appendLine()
+                appendLine("    // Write a new value, only with Option B")
+                appendLine("    // $mutateLine")
+            }
+            append("}")
+        }
+        isStatic -> {
+            val sputOp = fieldSetOpcode(dexType, isStatic = true).enumName()
+            appendLine("// '$fieldName' has no encoded constant - value is assigned in <clinit>.")
+            appendLine("// Fingerprint the <clinit> method narrowed by the field's SPUT opcode,")
+            appendLine("// then trace the last SPUT* writing to '$fieldName' and read the preceding CONST*.")
+            appendLine("internal val BytecodePatchContext.staticInitMethod by gettingFirstImmutableMethodDeclaratively {")
+            appendLine("    definingClass(\"$defClass\")")
+            appendLine("    name(\"<clinit>\")")
+            appendLine("    opcodes(Opcode.$sputOp)")
+            appendLine("}")
+            appendLine()
+            appendLine("apply {")
+            appendLine("    val ins = staticInitMethod.implementation!!.instructions.toList()")
+            appendLine("    val sputIdx = ins.indexOfLast { i ->")
+            appendLine("        i.opcode.name.startsWith(\"SPUT\") &&")
+            appendLine("        (i as? ReferenceInstruction)?.reference?.toString()")
+            appendLine("            ?.endsWith(\"->$fieldName:$dexType\") == true")
+            appendLine("    }")
+            appendLine("    if (sputIdx < 0) throw PatchException(\"No SPUT* for '$fieldName' in <clinit>\")")
+            appendLine("    val constIns = ins.subList(0, sputIdx).lastOrNull { it.opcode.name.startsWith(\"CONST\") }")
+            appendLine("        ?: throw PatchException(\"No preceding CONST* for '$fieldName'\")")
+            appendLine()
+            appendLine("    val currentValue: Any? = when (constIns) {")
+            appendLine("        is ReferenceInstruction -> constIns.reference.toString()  // const-string / const-class")
+            appendLine("        is WideLiteralInstruction -> constIns.wideLiteral  // const-wide*")
+            appendLine("        is NarrowLiteralInstruction -> constIns.narrowLiteral  // const, const/4, const/16, const/high16")
+            appendLine("        else -> null")
+            appendLine("    }")
+            append("}")
+        }
+        else -> {
+            val getOp = fieldGetOpcode(dexType, isStatic = false).enumName()
+            appendLine("// '$fieldName' is an instance field - value only exists at runtime.")
+            appendLine("// Build-time read impossible. Inject smali at a method where 'this' (p0)")
+            appendLine("// holds the instance. <init> picked by default - adjust target if needed.")
+            appendLine("internal val BytecodePatchContext.instanceInitMethod by gettingFirstMethodDeclaratively {")
+            appendLine("    definingClass(\"$defClass\")")
+            appendLine("    name(\"<init>\")")
+            appendLine("}")
+            appendLine()
+            appendLine("apply {")
+            appendLine("    instanceInitMethod.addInstructions(")
+            appendLine("        0,")
+            appendLine("        \"\"\"")
+            appendLine("            $getOp v0, p0, $defClass->$fieldName:$dexType")
+            appendLine("            invoke-static {v0}, Ljava/lang/String;->valueOf(Ljava/lang/Object;)Ljava/lang/String;")
+            appendLine("            move-result-object v0")
+            appendLine("            const-string v1, \"$fieldName\"")
+            appendLine("            invoke-static {v1, v0}, Landroid/util/Log;->i(Ljava/lang/String;Ljava/lang/String;)I")
+            appendLine("        \"\"\".trimIndent(),")
+            append("    )")
+            append("\n}")
+        }
+    }
+}
+
+private fun encodedValueClassFor(dexType: String): String = when (dexType) {
+    "Z" -> "BooleanEncodedValue"
+    "B" -> "ByteEncodedValue"
+    "S" -> "ShortEncodedValue"
+    "C" -> "CharEncodedValue"
+    "I" -> "IntEncodedValue"
+    "J" -> "LongEncodedValue"
+    "F" -> "FloatEncodedValue"
+    "D" -> "DoubleEncodedValue"
+    "Ljava/lang/String;" -> "StringEncodedValue"
+    else -> "EncodedValue"
+}
+
+private fun kotlinTypeFor(dexType: String): String = when (dexType) {
+    "Z" -> "Boolean"
+    "B" -> "Byte"
+    "S" -> "Short"
+    "C" -> "Char"
+    "I" -> "Int"
+    "J" -> "Long"
+    "F" -> "Float"
+    "D" -> "Double"
+    "Ljava/lang/String;" -> "String"
+    else -> "Any"
+}
+
+private fun mutableInitialValueExample(dexType: String): String? = when {
+    dexType == "Z" -> "fieldRef.initialValue = ImmutableBooleanEncodedValue.forBoolean(true).toMutable()"
+    dexType == "B" -> "fieldRef.initialValue = MutableByteEncodedValue(ImmutableByteEncodedValue(0.toByte()))"
+    dexType == "S" -> "fieldRef.initialValue = MutableShortEncodedValue(ImmutableShortEncodedValue(0.toShort()))"
+    dexType == "C" -> "fieldRef.initialValue = MutableCharEncodedValue(ImmutableCharEncodedValue(' '))"
+    dexType == "I" -> "fieldRef.initialValue = MutableIntEncodedValue(ImmutableIntEncodedValue(0))"
+    dexType == "J" -> "fieldRef.initialValue = MutableLongEncodedValue(ImmutableLongEncodedValue(0L))"
+    dexType == "F" -> "fieldRef.initialValue = MutableFloatEncodedValue(ImmutableFloatEncodedValue(0f))"
+    dexType == "D" -> "fieldRef.initialValue = MutableDoubleEncodedValue(ImmutableDoubleEncodedValue(0.0))"
+    dexType == "Ljava/lang/String;" -> "fieldRef.initialValue = MutableStringEncodedValue(ImmutableStringEncodedValue(\"New value…\"))"
+    dexType.startsWith("[") -> "fieldRef.initialValue = MutableArrayEncodedValue(ImmutableArrayEncodedValue(mutableListOf<ImmutableEncodedValue>()))"
+    dexType.startsWith("L") -> "fieldRef.initialValue = MutableNullEncodedValue()  // replace with a concrete encoded value if needed"
+    else -> null
+}

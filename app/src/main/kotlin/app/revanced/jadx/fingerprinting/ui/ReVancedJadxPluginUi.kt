@@ -5,6 +5,7 @@ import app.revanced.jadx.fingerprinting.ReVancedJadxPlugin
 import app.revanced.jadx.fingerprinting.core.ReVancedResolver
 import app.revanced.jadx.fingerprinting.ui.fingerprints.copyFieldAsNullifier
 import app.revanced.jadx.fingerprinting.ui.fingerprints.copyFieldAsStaticNullifier
+import app.revanced.jadx.fingerprinting.ui.fingerprints.copyFieldAsValueVariable
 import app.revanced.jadx.fingerprinting.ui.fingerprints.copyFieldFingerprint
 import app.revanced.jadx.fingerprinting.ui.fingerprints.copyMethodAsDeclarative
 import app.revanced.jadx.fingerprinting.ui.fingerprints.copyMethodAsImmutable
@@ -97,6 +98,11 @@ object ReVancedJadxPluginUi {
             "${MENU_PREFIX}Open Field Patch",
             { it is FieldNode }, null,
             { copyFieldFingerprint(it as FieldNode) },
+        )
+        guiContext.addPopupMenuAction(
+            "${MENU_PREFIX}Copy as Value Variable",
+            { it is FieldNode }, null,
+            { copyFieldAsValueVariable(it as FieldNode) },
         )
         guiContext.addPopupMenuAction(
             "${MENU_PREFIX}Copy as Field Nullifier",
