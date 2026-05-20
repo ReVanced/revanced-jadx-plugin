@@ -1,6 +1,7 @@
 package app.revanced.jadx.fingerprinting.ui
 
 import app.revanced.jadx.fingerprinting.ReVancedJadxPlugin
+import app.revanced.jadx.fingerprinting.ui.ReVancedJadxPluginUi.copyWithTimeout
 import app.revanced.jadx.fingerprinting.ui.components.CodePanel
 import app.revanced.jadx.fingerprinting.ui.theme.applyEditorTheme
 import io.github.oshai.kotlinlogging.KLogger
@@ -40,7 +41,8 @@ internal fun readOnlyCodePanel(text: String, guiContext: JadxGuiContext, log: KL
         applyEditorTheme(it, guiContext, log)
     }
 
-internal fun ReVancedJadxPluginUi.showError(
+internal fun showError(
+    guiContext: JadxGuiContext,
     msg: String,
     title: String = "Error",
     parent: Component? = null,
@@ -50,7 +52,14 @@ internal fun ReVancedJadxPluginUi.showError(
     )
 }
 
-internal fun ReVancedJadxPluginUi.showCodeDialog(
+internal fun ReVancedJadxPluginUi.showError(
+    msg: String,
+    title: String = "Error",
+    parent: Component? = null,
+) = showError(guiContext, msg, title, parent)
+
+internal fun showCodeDialog(
+    guiContext: JadxGuiContext,
     title: String,
     code: String,
     subtitle: String = "",
@@ -93,6 +102,13 @@ internal fun ReVancedJadxPluginUi.showCodeDialog(
         dialog.isVisible = true
     }
 }
+
+internal fun ReVancedJadxPluginUi.showCodeDialog(
+    title: String,
+    code: String,
+    subtitle: String = "",
+    parent: Component? = null,
+) = showCodeDialog(guiContext, title, code, subtitle, parent)
 
 internal fun saveToFile(code: String, defaultName: String, parent: Component? = null) {
     val chooser = JFileChooser().apply {
