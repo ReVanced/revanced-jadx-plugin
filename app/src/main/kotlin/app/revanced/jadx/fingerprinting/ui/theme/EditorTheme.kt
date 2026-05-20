@@ -6,18 +6,37 @@ import jadx.api.plugins.gui.JadxGuiContext
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea
 import org.fife.ui.rsyntaxtextarea.Theme
 import java.awt.Container
+import java.lang.reflect.Method
 import java.util.ArrayDeque
 import javax.swing.UIManager
 
+private object EditorThemeMethodCache {
+    @Volatile private var resolved = false
+    @Volatile private var method: Method? = null
+
+    fun get(mainFrame: Any, log: KLogger): Method? {
+        if (resolved) return method
+        synchronized(this) {
+            if (resolved) return method
+            method = runCatching { mainFrame.javaClass.getMethod("getEditorTheme") }
+                .onFailure { e -> log.warn { "JADX getEditorTheme unavailable: ${e.message}" } }
+                .getOrNull()
+            resolved = true
+            return method
+        }
+    }
+}
+
+@Volatile private var cloneFailureLogged = false
+@Volatile private var autoApplyFailureLogged = false
+
 internal fun applyEditorTheme(codePanel: CodePanel, guiContext: JadxGuiContext, log: KLogger) {
-    runCatching {
-        guiContext.mainFrame.javaClass.getMethod("getEditorTheme")
-            .invoke(guiContext.mainFrame) as? Theme
-    }.onFailure { e ->
-        log.warn { "JADX getEditorTheme unavailable: ${e.message}" }
-    }.getOrNull()?.let { theme ->
-        codePanel.setTheme(theme)
-        return
+    EditorThemeMethodCache.get(guiContext.mainFrame, log)?.let { m ->
+        runCatching { m.invoke(guiContext.mainFrame) as? Theme }
+            .getOrNull()?.let { theme ->
+                codePanel.setTheme(theme)
+                return
+            }
     }
 
     runCatching {
@@ -28,7 +47,10 @@ internal fun applyEditorTheme(codePanel: CodePanel, guiContext: JadxGuiContext, 
             }
         }
     }.onFailure { e ->
-        log.warn { "Could not clone theme from JADX editor: ${e.message}" }
+        if (!cloneFailureLogged) {
+            cloneFailureLogged = true
+            log.warn { "Could not clone theme from JADX editor: ${e.message}" }
+        }
     }
 
     runCatching {
@@ -45,7 +67,10 @@ internal fun applyEditorTheme(codePanel: CodePanel, guiContext: JadxGuiContext, 
             }
         }
     }.onFailure { e ->
-        log.warn { "Could not auto-apply editor theme: ${e.message}" }
+        if (!autoApplyFailureLogged) {
+            autoApplyFailureLogged = true
+            log.warn { "Could not auto-apply editor theme: ${e.message}" }
+        }
     }
 }
 
