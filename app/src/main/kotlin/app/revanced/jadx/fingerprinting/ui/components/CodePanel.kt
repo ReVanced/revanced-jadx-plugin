@@ -1,5 +1,7 @@
 package app.revanced.jadx.fingerprinting.ui.components
 
+import app.revanced.jadx.fingerprinting.core.SCRIPT_PRELUDE_LINE_COUNT
+import app.revanced.jadx.fingerprinting.core.ScriptEvaluation
 import jadx.gui.utils.ui.MousePressedHandler
 import org.fife.ui.autocomplete.AutoCompletion
 import org.fife.ui.autocomplete.CompletionProvider
@@ -16,24 +18,48 @@ import javax.swing.*
 import javax.swing.border.EmptyBorder
 import kotlin.math.log10
 
-class CodePanel : JPanel() {
+class CodePanel(enableLinting: Boolean = false) : JPanel() {
     private val codeArea: RSyntaxTextArea = RSyntaxTextArea()
     private val codeScrollPane: RTextScrollPane
 
     private var useSourceLines = false
 
+    private val lintParser: KotlinScriptParser? = if (enableLinting) {
+        KotlinScriptParser(
+            compileAsync = { ScriptEvaluation.compileDiagnostics(it) },
+            preludeLineOffset = SCRIPT_PRELUDE_LINE_COUNT,
+            textArea = codeArea,
+        )
+    } else {
+        null
+    }
+
     init {
         this.codeArea.setSyntaxEditingStyle(RSyntaxTextArea.SYNTAX_STYLE_KOTLIN)
         RSyntaxTextArea.setTemplatesEnabled(true)
         this.codeArea.setAntiAliasingEnabled(true)
+        lintParser?.let {
+            // reparse delay after the last keystroke
+            // todo: make these user editable settings
+            this.codeArea.parserDelay = 800
+            this.codeArea.addParser(it)
+        }
         this.codeScrollPane = RTextScrollPane(codeArea)
         setLayout(BorderLayout())
         setBorder(EmptyBorder(0, 0, 0, 0))
         add(codeScrollPane, BorderLayout.CENTER)
         initLinesModeSwitch()
         val ac = AutoCompletion(createCompletionProvider())
+        // todo: make these user editable settings
         ac.isParameterAssistanceEnabled = true
+        ac.isAutoActivationEnabled = true
+        ac.autoActivationDelay = 300
         ac.install(codeArea)
+    }
+
+    override fun removeNotify() {
+        super.removeNotify()
+        lintParser?.dispose()
     }
 
     var text: String
@@ -85,42 +111,52 @@ class CodePanel : JPanel() {
     fun createCompletionProvider(): CompletionProvider {
         val provider = DefaultCompletionProvider()
 
-        provider.addCompletion(TemplateCompletion(provider,
-            "fingerprint", "fingerprint { … }",
-            "fingerprint {\n\t\${cursor}\n}"))
-        provider.addCompletion(TemplateCompletion(provider,
-            "gettingFirstMethodDeclaratively", "gettingFirstMethodDeclaratively { … }",
-            "gettingFirstMethodDeclaratively {\n\t\${cursor}\n}"))
-        provider.addCompletion(TemplateCompletion(provider,
-            "definingClass", "definingClass(\"…\")",
-            "definingClass(\"\${cursor}\")"))
-        provider.addCompletion(TemplateCompletion(provider,
-            "name", "name(\"…\")",
-            "name(\"\${cursor}\")"))
-        provider.addCompletion(TemplateCompletion(provider,
-            "returnType", "returnType(\"…\")",
-            "returnType(\"\${cursor}\")"))
-        provider.addCompletion(TemplateCompletion(provider,
-            "parameterTypes", "parameterTypes(\"…\")",
-            "parameterTypes(\"\${cursor}\")"))
-        provider.addCompletion(TemplateCompletion(provider,
-            "returns", "returns(\"…\") - return type",
-            "returns(\"\${cursor}\")"))
-        provider.addCompletion(TemplateCompletion(provider,
-            "parameters", "parameters(\"…\") - parameter types",
-            "parameters(\"\${cursor}\")"))
-        provider.addCompletion(TemplateCompletion(provider,
-            "accessFlags", "accessFlags(AccessFlags.…)",
-            "accessFlags(AccessFlags.\${cursor})"))
-        provider.addCompletion(TemplateCompletion(provider,
-            "opcodes", "opcodes(Opcode.…)",
-            "opcodes(Opcode.\${cursor})"))
-        provider.addCompletion(TemplateCompletion(provider,
-            "strings", "strings(\"…\")",
-            "strings(\"\${cursor}\")"))
-        provider.addCompletion(TemplateCompletion(provider,
-            "custom", "custom { method, classDef -> … }",
-            "custom { method, classDef ->\n\t\${cursor}\n}"))
+        fun tpl(input: String, shortDesc: String, template: String) {
+            provider.addCompletion(TemplateCompletion(provider, input, shortDesc, template))
+        }
+
+        tpl("fingerprint", "fingerprint { … }", "fingerprint {\n\t\${cursor}\n}")
+        
+        listOf(
+            "gettingFirstMethodDeclaratively",
+            "gettingFirstMethodDeclarativelyOrNull",
+            "gettingFirstImmutableMethodDeclaratively",
+            "gettingFirstImmutableMethodDeclarativelyOrNull",
+            "gettingFirstMethod",
+            "gettingFirstMethodOrNull",
+            "gettingFirstImmutableMethod",
+            "gettingFirstImmutableMethodOrNull",
+            "composingFirstMethod",
+        ).forEach { fn ->
+            tpl(fn, "$fn { … }", "$fn {\n\t\${cursor}\n}")
+            tpl(fn, "$fn(\"…\") { … }", "$fn(\"\${str}\") {\n\t\${cursor}\n}")
+        }
+
+        listOf(
+            "gettingFirstClassDef",
+            "gettingFirstClassDefOrNull",
+            "gettingFirstImmutableClassDef",
+            "gettingFirstImmutableClassDefOrNull",
+            "gettingFirstClassDefDeclaratively",
+            "gettingFirstClassDefDeclarativelyOrNull",
+            "gettingFirstImmutableClassDefDeclaratively",
+            "gettingFirstImmutableClassDefDeclarativelyOrNull",
+        ).forEach { fn ->
+            tpl(fn, "$fn(\"L…;\")", "$fn(\"\${cursor}\")")
+            tpl(fn, "$fn(\"L…;\") { … }", "$fn(\"\${descriptor}\") {\n\t\${cursor}\n}")
+        }
+
+        tpl("definingClass", "definingClass(\"L…;\")", "definingClass(\"\${cursor}\")")
+        tpl("name", "name(\"…\")", "name(\"\${cursor}\")")
+        tpl("returnType", "returnType(\"…\")", "returnType(\"\${cursor}\")")
+        tpl("parameterTypes", "parameterTypes(\"…\", …)", "parameterTypes(\"\${cursor}\")")
+        tpl("accessFlags", "accessFlags(AccessFlags.…)", "accessFlags(AccessFlags.\${cursor})")
+        tpl("opcodes", "opcodes(Opcode.…)", "opcodes(Opcode.\${cursor})")
+        tpl("opcodesPattern", "opcodesPattern(\"smali …\")", "opcodesPattern(\"\"\"\n\t\${cursor}\n\"\"\")")
+        tpl("strings", "strings(\"…\")", "strings(\"\${cursor}\")")
+        tpl("custom", "custom { method, classDef -> … }", "custom { method, classDef ->\n\t\${cursor}\n}")
+        tpl("returns", "returns(\"…\") - return type", "returns(\"\${cursor}\")")
+        tpl("parameters", "parameters(\"…\") - parameter types", "parameters(\"\${cursor}\")")
 
         return provider
     }

@@ -4,8 +4,10 @@ import app.revanced.jadx.fingerprinting.ReVancedJadxPlugin
 import app.revanced.jadx.fingerprinting.runtime.FingerprintScript
 import app.revanced.jadx.fingerprinting.runtime.FingerprintScriptCompilationConfiguration
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlin.script.experimental.api.CompiledScript
 import kotlin.script.experimental.api.EvaluationResult
 import kotlin.script.experimental.api.ResultWithDiagnostics
+import kotlin.script.experimental.api.ScriptDiagnostic
 import kotlin.script.experimental.api.ScriptEvaluationConfiguration
 import kotlin.script.experimental.host.ScriptingHostConfiguration
 import kotlin.script.experimental.host.toScriptSource
@@ -40,7 +42,7 @@ object ScriptEvaluation {
     )
 
     init {
-        log.info { "Preloading BasicJvmScriptingHost..." }
+        log.info { "Preloading BasicJvmScriptingHost…" }
         val execTime = measureTime { rawEvaluate("") }
         log.info { "Preloading done in ${execTime.inWholeMilliseconds.milliseconds}" }
     }
@@ -50,5 +52,12 @@ object ScriptEvaluation {
     fun rawEvaluate(script: String): ResultWithDiagnostics<EvaluationResult> {
         val source = (SCRIPT_PRELUDE + "\n" + script).toScriptSource()
         return scriptingHost.eval(source, FingerprintScriptCompilationConfiguration, fingerprintScriptEvaluationConfiguration)
+    }
+
+    suspend fun compileDiagnostics(script: String): List<ScriptDiagnostic> {
+        val source = (SCRIPT_PRELUDE + "\n" + script).toScriptSource()
+        val result: ResultWithDiagnostics<CompiledScript> =
+            scriptingHost.compiler.invoke(source, FingerprintScriptCompilationConfiguration)
+        return result.reports
     }
 }
