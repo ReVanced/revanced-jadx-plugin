@@ -122,6 +122,11 @@ class CodePanel(
             codeArea.caretPosition = 0
         }
 
+    fun insertAtCaret(text: String) {
+        codeArea.replaceSelection(text)
+        codeArea.requestFocusInWindow()
+    }
+
     fun setEditable(editable: Boolean) {
         codeArea.isEditable = editable
         codeArea.highlightCurrentLine = editable

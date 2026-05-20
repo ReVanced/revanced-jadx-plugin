@@ -23,6 +23,9 @@ class TestFingerprintPanel(
 
     private val log = KotlinLogging.logger("${ReVancedJadxPlugin.ID}/test-panel")
     private val codePanel = CodePanel()
+    private val classBrowser = ClassBrowserPanel { dexDescriptor ->
+        codePanel.insertAtCaret("definingClass(\"$dexDescriptor\")")
+    }
     private val history = ArrayDeque<String>(HISTORY_MAX)
     private var historyIndex = -1
     private val backBtn = JButton("◀").apply { toolTipText = "Previous script"; isEnabled = false }
@@ -50,12 +53,16 @@ class TestFingerprintPanel(
             add(histLabel)
         }
 
-        val leftPanel = JPanel(BorderLayout()).apply {
+        val editorPanel = JPanel(BorderLayout()).apply {
             add(historyBar, BorderLayout.NORTH)
             add(codePanel, BorderLayout.CENTER)
         }
-        val splitPane = JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, resultPanel).apply {
-            resizeWeight = 0.45
+        val editorSplit = JSplitPane(JSplitPane.HORIZONTAL_SPLIT, classBrowser, editorPanel).apply {
+            resizeWeight = 0.25
+            dividerSize = 5
+        }
+        val splitPane = JSplitPane(JSplitPane.HORIZONTAL_SPLIT, editorSplit, resultPanel).apply {
+            resizeWeight = 0.6
             dividerSize = 5
         }
         add(splitPane, BorderLayout.CENTER)

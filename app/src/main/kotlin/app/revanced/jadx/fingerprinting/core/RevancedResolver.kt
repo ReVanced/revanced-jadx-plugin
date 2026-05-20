@@ -103,6 +103,17 @@ class ReVancedResolver : AutoCloseable {
         return classesField.get(bytecodeCtx) as Iterable<ClassDef>
     }
 
+    fun listClassTypes(): List<String> {
+        if (!::sourceApk.isInitialized || !::patcherTemporaryFilesPath.isInitialized) {
+            log.error { "Patcher not initialized; cannot list classes" }
+            return emptyList()
+        }
+        val patcher = synchronized(this) {
+            cachedPatcher ?: buildPatcher().also { cachedPatcher = it }
+        }
+        return extractClassesFromPatcher(patcher).map { it.type }.sorted()
+    }
+
     fun findCallers(target: Method): List<Method> {
         if (!::sourceApk.isInitialized || !::patcherTemporaryFilesPath.isInitialized) {
             log.error { "Patcher not initialized; cannot find callers" }
