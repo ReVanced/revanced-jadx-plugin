@@ -6,10 +6,12 @@ import jadx.gui.utils.ui.MousePressedHandler
 import org.fife.ui.autocomplete.AutoCompletion
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea
 import org.fife.ui.rsyntaxtextarea.Theme
+import org.fife.ui.rtextarea.IconRowHeader
 import org.fife.ui.rtextarea.LineNumberFormatter
 import org.fife.ui.rtextarea.LineNumberList
 import org.fife.ui.rtextarea.RTextScrollPane
 import java.awt.BorderLayout
+import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
@@ -63,6 +65,7 @@ class CodePanel(
         border = EmptyBorder(0, 0, 0, 0)
         add(codeScrollPane, BorderLayout.CENTER)
         initLinesModeSwitch()
+        initMarkerJumpHandler()
         applyAutoCompleteState()
         openSettingsSubscription()
     }
@@ -221,6 +224,23 @@ class CodePanel(
             if (gutterComp is LineNumberList) {
                 gutterComp.addMouseListener(lineModeSwitch)
             }
+        }
+    }
+
+    private fun initMarkerJumpHandler() {
+        for (gutterComp in codeScrollPane.gutter.components) {
+            if (gutterComp !is IconRowHeader) continue
+            gutterComp.addMouseListener(object : MouseAdapter() {
+                override fun mouseClicked(e: MouseEvent) {
+                    if (e.button != MouseEvent.BUTTON1) return
+                    val areaPoint = SwingUtilities.convertPoint(gutterComp, e.point, codeArea)
+                    val offset = codeArea.viewToModel2D(areaPoint).takeIf { it >= 0 } ?: return
+                    val line = codeArea.getLineOfOffset(offset)
+                    codeArea.caretPosition = codeArea.getLineStartOffset(line)
+                    codeArea.requestFocusInWindow()
+                }
+            })
+            return
         }
     }
 
