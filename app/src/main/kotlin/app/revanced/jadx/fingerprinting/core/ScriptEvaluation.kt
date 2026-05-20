@@ -30,6 +30,11 @@ fun fingerprint(
     return buildMethod.invoke(builder) as app.revanced.patcher.Fingerprint
 }
 
+typealias _CustomMatcher = (
+    method: com.android.tools.smali.dexlib2.iface.Method,
+    classDef: com.android.tools.smali.dexlib2.iface.ClassDef,
+) -> Boolean
+
 class _MethodSpec {
     var dc: String? = null
     var mn: String? = null
@@ -37,7 +42,9 @@ class _MethodSpec {
     var pts: List<String>? = null
     var af: Int? = null
     var ops: List<com.android.tools.smali.dexlib2.Opcode>? = null
+    var opsPattern: String? = null
     var strs: List<String>? = null
+    var customs: MutableList<_CustomMatcher> = mutableListOf()
 
     fun definingClass(value: String) { dc = value }
     fun name(value: String) { mn = value }
@@ -48,7 +55,9 @@ class _MethodSpec {
     }
     fun accessFlags(value: Int) { af = value }
     fun opcodes(vararg value: com.android.tools.smali.dexlib2.Opcode) { ops = value.toList() }
+    fun opcodesPattern(smali: String) { opsPattern = smali }
     fun strings(vararg value: String) { strs = value.toList() }
+    fun custom(block: _CustomMatcher) { customs += block }
 }
 
 fun matchesDefiningClass(target: String, pattern: String): Boolean = when {
@@ -70,27 +79,30 @@ fun gettingFirstMethodDeclaratively(
         spec.pts?.let { parameters(*it.toTypedArray()) }
         spec.af?.let { accessFlags(it) }
         spec.ops?.let { opcodes(*it.toTypedArray()) }
+        spec.opsPattern?.let { opcodes(it) }
         val dc = spec.dc; val mn = spec.mn
-        if (dc != null || mn != null) {
+        val customs = spec.customs.toList()
+        if (dc != null || mn != null || customs.isNotEmpty()) {
             custom { method: com.android.tools.smali.dexlib2.iface.Method,
-                      _: com.android.tools.smali.dexlib2.iface.ClassDef ->
+                      classDef: com.android.tools.smali.dexlib2.iface.ClassDef ->
                 (dc == null || matchesDefiningClass(method.definingClass, dc)) &&
-                (mn == null || method.name == mn)
+                (mn == null || method.name == mn) && customs.all { it(method, classDef) }
             }
         }
     }
 }
 
-fun gettingFirstImmutableClassDef(descriptor: String): app.revanced.patcher.Fingerprint =
-    fingerprint {
-        custom { method: com.android.tools.smali.dexlib2.iface.Method,
-                  _: com.android.tools.smali.dexlib2.iface.ClassDef ->
-            matchesDefiningClass(method.definingClass, descriptor)
-        }
-    }
+fun gettingFirstImmutableClassDef(descriptor: String, block: _MethodSpec.() -> Unit = {}): app.revanced.patcher.Fingerprint =
+    gettingFirstClassDefDeclaratively(descriptor, block)
 
-fun gettingFirstImmutableClassDefOrNull(descriptor: String): app.revanced.patcher.Fingerprint =
-    gettingFirstImmutableClassDef(descriptor)
+fun gettingFirstImmutableClassDefOrNull(descriptor: String, block: _MethodSpec.() -> Unit = {}): app.revanced.patcher.Fingerprint =
+    gettingFirstClassDefDeclaratively(descriptor, block)
+
+fun gettingFirstClassDef(descriptor: String, block: _MethodSpec.() -> Unit = {}): app.revanced.patcher.Fingerprint =
+    gettingFirstClassDefDeclaratively(descriptor, block)
+
+fun gettingFirstClassDefOrNull(descriptor: String, block: _MethodSpec.() -> Unit = {}): app.revanced.patcher.Fingerprint =
+    gettingFirstClassDefDeclaratively(descriptor, block)
 
 fun gettingFirstClassDefDeclaratively(descriptor: String = "", block: _MethodSpec.() -> Unit = {}): app.revanced.patcher.Fingerprint =
     gettingFirstMethodDeclaratively(block = {
@@ -126,6 +138,9 @@ fun gettingFirstMethodDeclarativelyOrNull(vararg matchStrings: String, block: _M
     gettingFirstMethodDeclaratively(*matchStrings, block = block)
 
 fun gettingFirstImmutableMethodDeclarativelyOrNull(vararg matchStrings: String, block: _MethodSpec.() -> Unit = {}): app.revanced.patcher.Fingerprint =
+    gettingFirstMethodDeclaratively(*matchStrings, block = block)
+
+fun composingFirstMethod(vararg matchStrings: String, block: _MethodSpec.() -> Unit = {}): app.revanced.patcher.Fingerprint =
     gettingFirstMethodDeclaratively(*matchStrings, block = block)
 """
 
