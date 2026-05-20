@@ -9,6 +9,9 @@ import app.revanced.patcher.patch.Patch
 import app.revanced.patcher.patch.bytecodePatch
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.util.MethodUtil
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
@@ -89,12 +92,37 @@ class ReVancedResolver : AutoCloseable {
         ),
     )
 
-    private fun extractMethodsFromPatcher(patcher: Patcher): List<Method> {
+    private fun extractMethodsFromPatcher(patcher: Patcher): List<Method> =
+        extractClassesFromPatcher(patcher).flatMap { it.methods }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun extractClassesFromPatcher(patcher: Patcher): Iterable<ClassDef> {
         val bytecodeCtx = bytecodeContextField.get(patcher.context)
         val classesField = findClassesField(bytecodeCtx.javaClass)
             ?: throw NoSuchFieldException("'classes' field not found in ${bytecodeCtx.javaClass.name}")
-        @Suppress("UNCHECKED_CAST")
-        return (classesField.get(bytecodeCtx) as Iterable<ClassDef>).flatMap { it.methods }
+        return classesField.get(bytecodeCtx) as Iterable<ClassDef>
+    }
+
+    fun findCallers(target: Method): List<Method> {
+        if (!::sourceApk.isInitialized || !::patcherTemporaryFilesPath.isInitialized) {
+            log.error { "Patcher not initialized; cannot find callers" }
+            return emptyList()
+        }
+        val patcher = synchronized(this) {
+            cachedPatcher ?: buildPatcher().also { cachedPatcher = it }
+        }
+        return extractClassesFromPatcher(patcher).asSequence()
+            .flatMap { it.methods.asSequence() }
+            .filter { it.referencesMethod(target) }
+            .toList()
+    }
+
+    private fun Method.referencesMethod(target: Method): Boolean {
+        val instructions = implementation?.instructions ?: return false
+        return instructions.any { ins ->
+            val ref = (ins as? ReferenceInstruction)?.reference as? MethodReference ?: return@any false
+            MethodUtil.methodSignaturesMatch(ref, target)
+        }
     }
 
     private fun findClassesField(cls: Class<*>): Field? {

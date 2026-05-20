@@ -18,7 +18,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.swing.Swing
 import kotlinx.coroutines.withContext
 import java.awt.*
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
+import java.util.regex.Pattern
 import javax.swing.*
+import javax.swing.event.DocumentEvent
+import javax.swing.event.DocumentListener
+import javax.swing.table.DefaultTableModel
+import javax.swing.table.TableRowSorter
 import kotlin.script.experimental.api.EvaluationResult
 import kotlin.script.experimental.api.ResultValue
 import kotlin.script.experimental.api.ResultWithDiagnostics
@@ -275,24 +282,144 @@ class FingerprintResultPanel(
 
         val javaKlass = context.decompiler.searchJavaClassByOrigFullName(javaName)
         val fgMethod = javaKlass?.searchMethodByShortId(shortId)
+        val actionRow = JPanel(FlowLayout(FlowLayout.LEFT, 6, 0)).apply { isOpaque = false }
         fgMethod?.let { sourceMethod ->
             addRow("Method", sourceMethod.fullName)
-            grid.add(JButton("Jump to method").apply {
+            actionRow.add(JButton("Jump to method").apply {
                 addActionListener {
                     if (!guiContext.open(sourceMethod.codeNodeRef))
                         log.error { "Failed to jump to method: ${sourceMethod.fullName}" }
                 }
-            }, GridBagConstraints().apply {
-                gridx = 1; gridwidth = 2; gridy = row
-                anchor = GridBagConstraints.WEST
-                insets = Insets(4, 0, 0, 0)
             })
         }
+        actionRow.add(JButton("Find usages").apply {
+            toolTipText = "Scan APK for methods that call this method"
+            addActionListener { showUsagesDialog(method) }
+        })
+        grid.add(actionRow, GridBagConstraints().apply {
+            gridx = 1; gridwidth = 2; gridy = row
+            anchor = GridBagConstraints.WEST
+            insets = Insets(4, 0, 0, 0)
+        })
 
         return JPanel(BorderLayout()).apply {
             isOpaque = false
             alignmentX = LEFT_ALIGNMENT
             add(grid, BorderLayout.CENTER)
+        }
+    }
+
+    private fun showUsagesDialog(target: Method) {
+        val dialog = JDialog(guiContext.mainFrame, "Find usages - ${target.name}", false)
+        dialog.defaultCloseOperation = JDialog.DISPOSE_ON_CLOSE
+        dialog.setSize(900, 520)
+        dialog.setLocationRelativeTo(guiContext.mainFrame)
+
+        val targetJavaName = ReflectionUtils.dexToJavaName(target.definingClass).replace("$", ".")
+        val targetSig = "${target.name}(${target.parameterTypes.joinToString(", ")})${target.returnType}"
+        val headerLabel = JLabel(
+            "<html><b>$targetSig</b><br><small>in <tt>$targetJavaName</tt></small></html>"
+        ).apply { border = BorderFactory.createEmptyBorder(0, 0, 8, 0) }
+
+        val statusLabel = JLabel("Scanning APK…")
+        val filterField = JTextField(20).apply { toolTipText = "Substring filter (case-insensitive); matches class or method" }
+        val filterRow = JPanel(BorderLayout(8, 0)).apply {
+            add(statusLabel, BorderLayout.WEST)
+            add(JPanel(FlowLayout(FlowLayout.RIGHT, 6, 0)).apply {
+                add(JLabel("Filter:"))
+                add(filterField)
+            }, BorderLayout.EAST)
+        }
+        val callerHolder = mutableListOf<Method>()
+        val model = object : DefaultTableModel(arrayOf("Class", "Method"), 0) {
+            override fun isCellEditable(row: Int, col: Int) = false
+            override fun getColumnClass(columnIndex: Int): Class<*> = String::class.java
+        }
+        val sorter = TableRowSorter(model)
+        val table = JTable(model).apply {
+            rowSorter = sorter
+            setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
+            autoResizeMode = JTable.AUTO_RESIZE_LAST_COLUMN
+            setShowGrid(false)
+            rowHeight = 22
+            intercellSpacing = Dimension(0, 0)
+        }
+        table.columnModel.getColumn(0).preferredWidth = 480
+        table.columnModel.getColumn(1).preferredWidth = 360
+
+        fun jumpToSelected() {
+            val viewRow = table.selectedRow.takeIf { it >= 0 } ?: return
+            val modelRow = table.convertRowIndexToModel(viewRow)
+            val caller = callerHolder.getOrNull(modelRow) ?: return
+            val javaName = ReflectionUtils.dexToJavaName(caller.definingClass).replace("$", ".")
+            val shortId = caller.getShortId()
+            val sourceMethod = context.decompiler.searchJavaClassByOrigFullName(javaName)
+                ?.searchMethodByShortId(shortId)
+            if (sourceMethod != null) {
+                if (!guiContext.open(sourceMethod.codeNodeRef))
+                    log.error { "Failed to jump to caller: ${sourceMethod.fullName}" }
+            } else {
+                log.warn { "No JADX source for caller: $javaName.$shortId" }
+            }
+        }
+
+        table.addMouseListener(object : MouseAdapter() {
+            override fun mouseClicked(e: MouseEvent) {
+                if (e.clickCount == 2 && table.selectedRow >= 0) jumpToSelected()
+            }
+        })
+
+        filterField.document.addDocumentListener(object : DocumentListener {
+            private fun applyFilter() {
+                val text = filterField.text
+                sorter.rowFilter = if (text.isBlank()) null
+                else RowFilter.regexFilter("(?i)" + Pattern.quote(text))
+            }
+            override fun insertUpdate(e: DocumentEvent) = applyFilter()
+            override fun removeUpdate(e: DocumentEvent) = applyFilter()
+            override fun changedUpdate(e: DocumentEvent) = applyFilter()
+        })
+
+        val openBtn = JButton("Open Selected").apply {
+            isEnabled = false
+            addActionListener { jumpToSelected() }
+        }
+        table.selectionModel.addListSelectionListener { openBtn.isEnabled = table.selectedRow >= 0 }
+        val closeBtn = JButton("Close").apply { addActionListener { dialog.dispose() } }
+        val southPanel = JPanel(FlowLayout(FlowLayout.RIGHT, 6, 0)).apply {
+            add(openBtn); add(closeBtn)
+        }
+
+        val northPanel = JPanel(BorderLayout()).apply {
+            add(headerLabel, BorderLayout.NORTH)
+            add(filterRow, BorderLayout.CENTER)
+            border = BorderFactory.createEmptyBorder(0, 0, 8, 0)
+        }
+        dialog.contentPane.add(JPanel(BorderLayout(8, 8)).apply {
+            border = BorderFactory.createEmptyBorder(10, 10, 10, 10)
+            add(northPanel, BorderLayout.NORTH)
+            add(JScrollPane(table), BorderLayout.CENTER)
+            add(southPanel, BorderLayout.SOUTH)
+        })
+        dialog.isVisible = true
+
+        scope.launch {
+            val callers: List<Method>
+            val scanTime = measureTime {
+                callers = runCatching { ReVancedJadxPluginUi.resolver.findCallers(target) }
+                    .onFailure { log.error(it) { "findCallers failed" } }
+                    .getOrDefault(emptyList())
+            }
+            val sortedCallers = callers.sortedWith(compareBy({ it.definingClass }, { it.name }))
+            withContext(Dispatchers.Swing) {
+                statusLabel.text = "Found ${callers.size} usage(s) in ${scanTime.inWholeMilliseconds.milliseconds}"
+                callerHolder.clear()
+                callerHolder.addAll(sortedCallers)
+                sortedCallers.forEach { caller ->
+                    val javaName = ReflectionUtils.dexToJavaName(caller.definingClass).replace("$", ".")
+                    model.addRow(arrayOf(javaName, caller.getShortId()))
+                }
+            }
         }
     }
 
